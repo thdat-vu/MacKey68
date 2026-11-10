@@ -1,0 +1,23 @@
+{
+  "name": "K68 on macOS",
+  "device": { "vendorID": 39658, "productID": 4137 },
+  "profiles": [
+    {
+      "id": "mac",
+      "name": "macOS",
+      "autoFor": [],
+      "mappings": [
+        { "from": "LeftAlt", "to": "LeftGUI" },
+        { "from": "LeftGUI", "to": "LeftAlt" }
+      ]
+    },
+    {
+      "id": "league",
+      "name": "League of Legends",
+      "autoFor": ["com.riotgames."],
+      "mappings": [
+        { "from": "CapsLock", "to": "Grave" }
+      ]
+    }
+  ]
+}
