@@ -1,3 +1,90 @@
+# Contributing to MacKey68
+
+<a id="english"></a>
+**English** · [Tiếng Việt](#tiếng-việt)
+
+Thanks for wanting to contribute! This is a small tool: keep changes focused, clear,
+and tested against real hardware when possible.
+
+## Before you start
+
+- Open an issue first for larger changes (new features, config format changes, remap
+  behavior changes).
+- For small fixes, feel free to open a pull request directly.
+
+## Build and test
+
+Requirements: macOS 13+, Command Line Tools (`xcode-select --install`). Xcode is not
+needed.
+
+```bash
+swift build -c release
+./.build/release/mackey selftest
+./scripts/build-app.sh          # make sure the app still packages
+```
+
+If you change the UI, run the app:
+
+```bash
+open build/MacKey68.app
+./.build/release/mackey board   # open the keyboard window
+```
+
+If you change key reading/writing, verify on a real keyboard:
+
+```bash
+./.build/release/mackey dump --device 0x9AEA:0x1029
+```
+
+## Conventions
+
+- Match the existing Swift style; prefer clarity over brevity.
+- Every UI string must exist in both Vietnamese and English (`model.t("VI", "EN")`).
+- Changes to remap/profile behavior must update `README.md` (both language sections).
+- Don't commit `.build/`, `build/`, `dist/`, generated icons, or personal config from
+  `~/.config/mackey/`.
+
+## Pull requests
+
+- One PR per change; describe the problem and the fix briefly.
+- Mention which keyboard you tested with (for example `0x9AEA:0x1029`) when relevant.
+- Fill in the checklist in the PR template.
+
+## CLA is required
+
+Before a PR can be merged, you must agree to the
+[Individual Contributor License Agreement](CLA.md).
+
+How to sign: comment on your PR with exactly this sentence (plus your full name and
+date):
+
+```
+I have read the CLA Document and I hereby sign the CLA
+Vu Thanh Dat, 2026-11-10
+```
+
+This electronic signature lets the Project Owner use your contribution in the project
+under GPL-3.0-or-later **and** relicense it under commercial terms (dual licensing).
+You keep the copyright in your contribution and may use it for any other purpose.
+
+If you contribute on behalf of a company, open an issue to arrange a corporate CLA
+first.
+
+> Note: if the project grows enough, we can enable
+> [CLA Assistant](https://github.com/cla-assistant/cla-assistant) to check signatures
+> automatically. For now, signatures are checked manually during review.
+
+## License of contributions
+
+Contributions are distributed in the project under
+[GPL-3.0-or-later](LICENSE). The CLA above is an additional agreement between you and
+the Project Owner; it does not change the rights of end users under the GPL.
+
+---
+
+<a id="tiếng-việt"></a>
+**Tiếng Việt** · [English](#english)
+
 # Đóng góp cho MacKey68
 
 Cảm ơn bạn muốn đóng góp! Repo này là công cụ nhỏ, ưu tiên thay đổi gọn, rõ và có
@@ -36,7 +123,7 @@ Nếu sửa phần đọc/ghi phím, kiểm tra trên bàn phím thật:
 
 - Swift theo style hiện có; ưu tiên rõ ràng hơn ngắn.
 - Chuỗi giao diện phải có cả tiếng Việt và tiếng Anh (`model.t("VI", "EN")`).
-- Thay đổi hành vi remap/profile phải cập nhật `README.md`.
+- Thay đổi hành vi remap/profile phải cập nhật `README.md` (cả hai phần ngôn ngữ).
 - Không commit `.build/`, `build/`, `dist/`, icon sinh tự động, hay config cá nhân
   trong `~/.config/mackey/`.
 
