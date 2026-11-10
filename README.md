@@ -264,3 +264,23 @@ scripts/
 
 Self-check: `swift run -c release mackey selftest` (XCTest chỉ có khi cài Xcode đầy đủ,
 nên test nằm trong CLI).
+
+## Giấy phép
+
+Copyright (C) 2026 Vũ Thành Đạt.
+
+MacKey68 là phần mềm tự do: bạn có thể phân phối lại và/hoặc sửa đổi theo điều khoản
+**GNU General Public License phiên bản 3 hoặc mới hơn** (GPL-3.0-or-later) do Free
+Software Foundation công bố. Xem toàn văn tại [LICENSE](LICENSE).
+
+Phần mềm được cung cấp **KHÔNG CÓ BẢO HÀNH**, kể cả bảo hành về khả năng bán được hoặc
+phù hợp cho một mục đích cụ thể.
+
+### Dùng thương mại
+
+GPL-3.0 **cho phép** sử dụng thương mại, nhưng nếu bạn phân phối bản sửa đổi hoặc sản
+phẩm dẫn xuất từ MacKey68 thì phải công bố source theo GPL.
+
+Nếu bạn muốn nhúng vào sản phẩm đóng hoặc không muốn tuân theo nghĩa vụ GPL, có thể mua
+**giấy phép thương mại riêng** (dual licensing): mở issue tại
+<https://github.com/thdat-vu/MacKey68/issues> để trao đổi.

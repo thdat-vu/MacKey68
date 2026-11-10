@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
 
 /// Quản lý LaunchAgent của chính app, để bản tải về (DMG) tự chạy khi đăng nhập

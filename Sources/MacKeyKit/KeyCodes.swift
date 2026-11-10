@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
 
 /// HID keyboard usages (usage page 0x07) and human friendly names for them.

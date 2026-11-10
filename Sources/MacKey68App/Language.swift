@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
 
 /// Ngôn ngữ giao diện. Lưu trong UserDefaults nên nhớ giữa các lần mở.
