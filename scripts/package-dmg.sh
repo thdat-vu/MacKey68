@@ -30,9 +30,13 @@ MacKey68 — Ziyoulang K68 as a macOS keyboard
    mở bàn phím vẽ ra và đổi phím.
 4. App tự đăng ký chạy khi đăng nhập. Tắt trong menu bar nếu không muốn.
 
+Source code (GPL-3.0-or-later): https://github.com/thdat-vu/MacKey68
+Giấy phép: xem file LICENSE kèm theo.
+
 Gỡ: xoá app khỏi Applications, rồi xoá
 ~/Library/LaunchAgents/com.mackey68.app.plist và thư mục ~/.config/mackey.
 TXT
+cp LICENSE "$ROOT/LICENSE"
 
 rm -f "$DMG"
 hdiutil create \
