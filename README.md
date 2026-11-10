@@ -1,5 +1,8 @@
 # MacKey68 — biến Ziyoulang K68 thành bàn phím macOS
 
+![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
+![Platform: macOS 13+](https://img.shields.io/badge/platform-macOS%2013%2B-lightgrey)
+
 Trả lời ngắn cho câu hỏi "có app nào như Razer Synapse / G Hub cho K68 trên macOS không?":
 
 **Không có.** Ziyoulang không phát hành phần mềm macOS cho K68, và cũng không có app
@@ -284,3 +287,13 @@ phẩm dẫn xuất từ MacKey68 thì phải công bố source theo GPL.
 Nếu bạn muốn nhúng vào sản phẩm đóng hoặc không muốn tuân theo nghĩa vụ GPL, có thể mua
 **giấy phép thương mại riêng** (dual licensing): mở issue tại
 <https://github.com/thdat-vu/MacKey68/issues> để trao đổi.
+
+## Đóng góp
+
+Mọi người đều có thể đóng góp. Đọc [CONTRIBUTING.md](CONTRIBUTING.md) để biết cách
+build/test và quy ước.
+
+Trước khi merge, PR cần ký [CLA](CLA.md) (bình luận câu ký trong PR). CLA cho phép
+Project Owner dùng đóng góp của bạn theo GPL-3.0-or-later và cấp phép lại theo điều
+khoản thương mại — điều kiện cần để mô hình dual licensing tiếp tục hợp pháp khi có
+nhiều người đóng góp.
