@@ -16,6 +16,15 @@ doesn't either, since this isn't a QMK board).
 But **you don't need vendor software**. This board (OnMicro BLE) emits standard HID
 usages, so it can be remapped cleanly at the OS level. This repo is that app.
 
+<p align="center">
+  <img src="docs/screenshots/mackey68-board.png"
+       alt="MacKey68 keyboard window with the 68-key board drawn out"
+       width="820">
+</p>
+
+*The keyboard window: click any key to remap it. Remapped keys are highlighted, and the
+profile switches automatically when you open a linked app.*
+
 ## The keyboard
 
 ```
@@ -318,6 +327,15 @@ Ziyoulang; VIA/QMK cũng không, vì đây không phải board QMK).
 
 Nhưng **không cần app của hãng**. Board này (OnMicro BLE) chỉ gửi HID usage chuẩn, nên
 có thể remap sạch ở tầng hệ điều hành. Repo này là app làm việc đó.
+
+<p align="center">
+  <img src="docs/screenshots/mackey68-board.png"
+       alt="Cửa sổ bàn phím MacKey68 vẽ 68 phím"
+       width="820">
+</p>
+
+*Cửa sổ bàn phím: bấm phím bất kỳ để đổi chức năng. Phím đã đổi hiện màu xanh, và
+profile tự chuyển khi bạn mở app đã gắn.*
 
 ## Bàn phím đang cắm
 
