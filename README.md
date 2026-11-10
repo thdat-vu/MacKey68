@@ -1,7 +1,313 @@
-# MacKey68 — biến Ziyoulang K68 thành bàn phím macOS
+# MacKey68 — turn a Ziyoulang K68 into a macOS keyboard
 
 ![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 ![Platform: macOS 13+](https://img.shields.io/badge/platform-macOS%2013%2B-lightgrey)
+
+<a id="english"></a>
+**English** · [Tiếng Việt](#tiếng-việt)
+
+Short answer to "is there an app like Razer Synapse / G Hub for the K68 on macOS?":
+
+**No.** Ziyoulang doesn't ship macOS software for the K68, and no third-party app
+supports this board (sharkfin covers 1400+ ROYUAN boards but not Ziyoulang; VIA/QMK
+doesn't either, since this isn't a QMK board).
+
+But **you don't need vendor software**. This board (OnMicro BLE) emits standard HID
+usages, so it can be remapped cleanly at the OS level. This repo is that app.
+
+## The keyboard
+
+```
+$ mackey list
+Keyboards:
+  0x9AEA:0x1029  OnMicro K68 BT5.0  [Bluetooth Low Energy]
+```
+
+Its HID report descriptor shows:
+
+| Property | Value |
+|---|---|
+| Chip | OnMicro (BLE) |
+| VID:PID | `0x9AEA:0x1029` |
+| Report interval | 8 ms (125 Hz) |
+| Keyboard | boot protocol, 8-bit modifier + 6-key array (6KRO, no NKRO) |
+| Consumer page | yes, usages `0x01…0x3FF` (media/volume) |
+| Layout descriptor | ANSI, usage range `0x00…0xFF` |
+
+Key consequence: **Fn is handled in firmware**, so `Fn+...` emits a normal HID usage
+(for example `Fn+PgUp` → `Home`). OS-level remapping therefore works even for keys
+that are only reachable through Fn.
+
+## Three ways to get a Mac layout
+
+**1. Hardware Mac mode (try this first, 5 seconds).**
+K68 firmware families usually ship an OS mode:
+
+| Combo | Mode |
+|---|---|
+| `Fn+S` | Windows |
+| `Fn+A` | Android |
+| `Fn+D` | **macOS** |
+| `Fn+F` | iOS |
+
+Press `Fn+D`, then retest the Command/Option keys and the F row. If it works, you're
+done. (Some revisions use `Fn+Z`/`Fn+X` for Win/Mac — try both.)
+
+> **Tested on this board:** `Fn+D` just typed `d`; `` ` `` only came from `Fn+Esc`.
+> The firmware has no Mac mode, so remapping has to happen at the macOS level (option 3).
+
+**2. Fix the macOS "Keyboard Type".**
+If characters come out wrong (`@` becomes `"`, no backtick), it's not a layout bug but
+macOS guessing ANSI/ISO/JIS wrong:
+System Settings → Keyboard → *Change Keyboard Type…* → ANSI.
+
+**3. Remap with `mackey` (this repo).**
+Use it when you want specific swaps: Caps → Esc, Right Alt → Right Command, swap
+`Ctrl`/`Option`, turn `Fn+PgUp` (which sends `Home`) into `Cmd+Left`, and so on.
+
+## Install
+
+Requirements: macOS 13+, Command Line Tools (`xcode-select --install`). Xcode is not
+needed.
+
+```bash
+swift build -c release
+ln -sf "$PWD/.build/release/mackey" /usr/local/bin/mackey
+```
+
+### Menu-bar app (recommended)
+
+```bash
+./scripts/install-app.sh
+```
+
+The script packages the SwiftUI app as `~/Applications/MacKey68.app` (no Xcode),
+registers the `com.mackey68.app` LaunchAgent so it starts at login, and keeps remap
+across unplug/replug. Normally it lives only in the menu bar; while the keyboard
+window is open its icon appears in the Dock and disappears when you close the window.
+
+Open the drawn keyboard — any of these:
+
+- Click **MacKey68** in Launchpad / Finder (even when the app is already running).
+- Menu bar → keyboard icon → **Open keyboard…**
+- Terminal:
+
+```bash
+mackey board
+# or: open "mackey68://board"
+```
+
+> Don't use `open MacKey68.app --args --board` while the app is running: macOS treats it
+> as reopening an existing app and ignores the arguments. Use `mackey68://board` above.
+
+In that window:
+
+- Click a key on the drawing to select it, then pick the target key. Remapped keys are
+  highlighted and keep the original label in the corner so you don't lose track.
+- **Auto-switch in:** each profile has a list of apps. `+ AppName` links the selected
+  profile to the last used app — open that app (including games running under
+  Wine/CrossOver) and the profile switches automatically. `×` unlinks.
+- Pick the profile at the top; `On` temporarily disables all remapping.
+- **VI / EN** on the right switches the UI language; the choice is remembered. The menu
+  bar also has **Language**.
+- The menu bar has **Launch at login** — the DMG build turns it on at first launch.
+
+Default profiles:
+
+| Profile | Auto-switch in | Mapping |
+|---|---|---|
+| `macOS` | (default) | LeftAlt↔LeftGUI — Caps stays Caps |
+| `League of Legends` | `com.riotgames.` | Caps→`` ` ``; no Cmd/Alt swap |
+
+So on the desktop the key left of Space is **⌘** like on a MacBook and **Caps Lock
+still works normally** for typing capitals. In game that key is **⌥**, and Caps becomes
+a single-key `` ` `` to lock the camera on a champion — no `Fn+Esc` needed.
+
+Uninstall:
+
+```bash
+launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.mackey68.app.plist
+rm -rf ~/Applications/MacKey68.app
+```
+
+### Shipping to other people (.dmg)
+
+```bash
+./scripts/package-dmg.sh
+```
+
+Creates `dist/MacKey68-0.1.0.dmg` with the app and an Applications shortcut to drag it
+onto. The app registers itself as a login item on first launch, so users don't need
+Terminal.
+
+Gatekeeper has three levels:
+
+| Signing | What users see |
+|---|---|
+| Unsigned / ad-hoc (default) | macOS blocks the first open: right-click app → **Open** → **Open** |
+| Developer ID + notarize | Opens normally, no warning |
+| Mac App Store | Requires sandbox and Apple review; not a fit for this app |
+
+To sign with Developer ID (paid Apple Developer account):
+
+```bash
+MACKEY_SIGN_IDENTITY="Developer ID Application: Name (TEAMID)" ./scripts/package-dmg.sh
+# then notarize:
+xcrun notarytool submit dist/MacKey68-0.1.0.dmg \
+  --apple-id you@example.com --team-id TEAMID --password "$APP_PASSWORD" --wait
+xcrun stapler staple dist/MacKey68-0.1.0.dmg
+```
+
+The app icon is drawn in code; no source image is needed:
+
+```bash
+./scripts/make-icon.sh     # → Assets/AppIcon.icns
+```
+
+## Usage
+
+```bash
+mackey list                 # list keyboards + VID:PID
+mackey watch                # print real usages as you type (needs Input Monitoring)
+mackey keys                 # key names accepted in the config
+mackey init                 # create ~/.config/mackey/keymap.json
+mackey apply                # apply the keymap
+mackey dump                 # show the remap currently in effect
+mackey reset                # clear everything
+mackey install-agent        # keep remap across unplug/replug
+mackey uninstall-agent
+mackey board                # open the app's keyboard window
+```
+
+`mackey watch` needs **Input Monitoring** (System Settings → Privacy & Security →
+Input Monitoring → enable for Terminal). It's the tool for discovering what `Fn+...`
+really sends.
+
+### Config
+
+`~/.config/mackey/keymap.json` (or `config/k68-mac.json` in the repo):
+
+```json
+{
+  "name": "K68 on macOS",
+  "device": { "vendorID": 39658, "productID": 4137 },
+  "profiles": [
+    {
+      "id": "mac",
+      "name": "macOS",
+      "autoFor": [],
+      "mappings": [
+        { "from": "LeftAlt", "to": "LeftGUI" },
+        { "from": "LeftGUI", "to": "LeftAlt" }
+      ]
+    },
+    {
+      "id": "league",
+      "name": "League of Legends",
+      "autoFor": ["com.riotgames."],
+      "mappings": [
+        { "from": "CapsLock", "to": "Grave" }
+      ]
+    }
+  ]
+}
+```
+
+- `autoFor`: bundle ids that auto-activate the profile. Matched **exactly or by
+  prefix**, so `com.riotgames.` matches every Riot bundle. A profile with an empty
+  `autoFor` is the fallback when nothing matches.
+- The older `mappings`-only format still loads and is upgraded to a `default` profile.
+- The app rewrites this config whenever you change a key or link an app; after editing
+  by hand, reopen the app (or click **Reapply** in the menu).
+
+`vendorID`/`productID` are decimal (`0x9AEA` = 39658, `0x1029` = 4137). Leave them
+`null` to apply to every keyboard.
+
+Key names accept common spellings: `Cmd`, `Command`, `Win`, `Opt`, `Option`, `Alt`,
+`Ctrl`, `Esc`, `Enter`, `Backtick`, `Caps`… or hex codes such as `0x39`.
+
+### Known limitations
+
+- `hidutil`'s `UserKeyMapping` can only map **key → key**; it cannot map
+  `modifier + key` or macros. For `Cmd+Left`, use Karabiner-Elements.
+- Media keys (Consumer page) can't be remapped with `hidutil`.
+- Remap is lost when the keyboard is **unplugged** (hidutil only edits devices that
+  currently exist). `mackey install-agent` runs in the background and reapplies on every
+  attach.
+- The `Fn` key itself can't be remapped (firmware owns it).
+
+### If you need more
+
+[Karabiner-Elements](https://karabiner-elements.pqrs.org) can do all of the above
+(combos, hyper keys, layers, per-device rules). Use `mackey` when you only need a few
+swaps and don't want another third-party kext/daemon.
+
+## Structure
+
+```
+Sources/MacKeyKit/
+  KeyCodes.swift       key name ↔ HID usage table
+  Keymap.swift         config model + resolve + validate
+  HIDDevices.swift     list devices via IORegistry (no privileges)
+  HIDUtil.swift        call hidutil --matching --set
+  DeviceWatcher.swift  watch attach/detach to reapply mappings
+  KeyWatcher.swift     dump usages in real time (Input Monitoring)
+  LaunchAgent.swift    install/remove the background agent
+Sources/mackey/main.swift   CLI
+Sources/MacKey68App/        menu-bar app + drawn keyboard
+  AppModel.swift       state, profiles, app linking, hidutil calls
+  Language.swift       VI/EN enum + string helper
+  LoginItem.swift      self-register as a login item
+  BoardView.swift      keycap drawing
+  BoardWindow.swift    keyboard window + inspector
+  MacKey68App.swift    entry point + menu
+Assets/              generated icon (AppIcon.icns)
+scripts/
+  build-app.sh         package the .app (no Xcode)
+  install-app.sh       install to ~/Applications + LaunchAgent
+  make-icon.swift      draw the icon with AppKit
+  make-icon.sh         export .icns
+  package-dmg.sh       build the release DMG
+```
+
+Self-check: `swift run -c release mackey selftest` (XCTest only ships with a full Xcode
+install, so the tests live in the CLI).
+
+## License
+
+Copyright (C) 2026 Vu Thanh Dat.
+
+MacKey68 is free software: you can redistribute it and/or modify it under the terms of
+the **GNU General Public License, version 3 or later** (GPL-3.0-or-later) as published by
+the Free Software Foundation. See the full text in [LICENSE](LICENSE).
+
+This software is provided **WITHOUT ANY WARRANTY**, including merchantability or fitness
+for a particular purpose.
+
+### Commercial use
+
+GPL-3.0 **allows** commercial use, but if you distribute a modified version or a
+derivative work of MacKey68 you must publish its source under the GPL.
+
+If you want to embed it in a closed-source product or avoid GPL obligations, a separate
+**commercial license** is available (dual licensing): open an issue at
+<https://github.com/thdat-vu/MacKey68/issues>.
+
+## Contributing
+
+Anyone can contribute. See [CONTRIBUTING.md](CONTRIBUTING.md) for build/test steps and
+conventions (the guide is currently written in Vietnamese).
+
+Before a PR is merged it must sign the [CLA](CLA.md) (comment the signing sentence in the
+PR). The CLA lets the Project Owner use your contribution under GPL-3.0-or-later and
+relicense it commercially — required to keep dual licensing valid as contributors join.
+
+---
+
+<a id="tiếng-việt"></a>
+**Tiếng Việt** · [English](#english)
+
+# MacKey68 — biến Ziyoulang K68 thành bàn phím macOS
 
 Trả lời ngắn cho câu hỏi "có app nào như Razer Synapse / G Hub cho K68 trên macOS không?":
 
@@ -192,7 +498,6 @@ Input Monitoring → bật cho Terminal). Đây là công cụ để dò xem `Fn
       "name": "macOS",
       "autoFor": [],
       "mappings": [
-        { "from": "CapsLock", "to": "Grave" },
         { "from": "LeftAlt", "to": "LeftGUI" },
         { "from": "LeftGUI", "to": "LeftAlt" }
       ]
