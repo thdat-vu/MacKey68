@@ -17,6 +17,12 @@ struct BoardWindow: View {
         .padding(18)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(nsColor: .windowBackgroundColor))
+        .sheet(isPresented: $model.isShowingGuide, onDismiss: {
+            model.markGuideSeen()
+        }) {
+            GuideView()
+                .environmentObject(model)
+        }
     }
 
     private var header: some View {
@@ -41,6 +47,14 @@ struct BoardWindow: View {
             }
             .labelsHidden()
             .frame(width: 200)
+
+            Button {
+                model.openGuide()
+            } label: {
+                Image(systemName: "questionmark.circle")
+            }
+            .buttonStyle(.borderless)
+            .help(model.t("Hướng dẫn sử dụng", "How to use MacKey68"))
 
             Picker("", selection: Binding(
                 get: { model.language },
@@ -249,6 +263,7 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
 
     func show(model: AppModel) {
+        let createdWindow = window == nil
         if window == nil {
             let window = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 980, height: 700),
@@ -265,6 +280,13 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
             self.window = window
         }
         activateWindow(retries: 8)
+
+        // Lần đầu mở: chờ cửa sổ lên rồi mới bung popup hướng dẫn.
+        if createdWindow {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                model.presentGuideIfNeeded()
+            }
+        }
     }
 
     /// macOS hay trì hoãn việc activate app mới; thử lại vài lần cho chắc.

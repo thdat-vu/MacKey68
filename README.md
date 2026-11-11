@@ -60,8 +60,10 @@ managed, and the drawn board adapts to one of three layouts:
 | `tkl` | 87 | Edra EK387 Pro, TKL boards |
 | `full` | 104 | Full-size boards with a numpad |
 
-- The app scans external keyboards at launch and on every plug/unplug. The built-in
-  Apple keyboard and gaming mice that expose a stray keyboard collection are ignored.
+- The app scans external keyboards at launch and on every plug/unplug. New boards are
+  added automatically with the detected layout and start receiving mappings. The
+  built-in Apple keyboard and gaming mice that expose a stray keyboard collection are
+  ignored.
 - Open the keyboard window and use the **Keyboard** picker to switch boards; the
   **Layout** picker (68 / TKL / Full) changes the drawing. The choice is saved per
   device.
@@ -145,6 +147,8 @@ In that window:
 - **VI / EN** on the right switches the UI language; the choice is remembered. The menu
   bar also has **Language**.
 - The menu bar has **Launch at login** — the DMG build turns it on at first launch.
+- The first launch shows a 4-step guide. Reopen it from the menu bar → **Guide…** or the
+  **?** button in the window.
 
 Default profiles:
 
@@ -170,7 +174,7 @@ rm -rf ~/Applications/MacKey68.app
 ./scripts/package-dmg.sh
 ```
 
-Creates `dist/MacKey68-0.2.0.dmg` with the app and an Applications shortcut to drag it
+Creates `dist/MacKey68-0.3.0.dmg` with the app and an Applications shortcut to drag it
 onto. The app registers itself as a login item on first launch, so users don't need
 Terminal.
 
@@ -187,9 +191,9 @@ To sign with Developer ID (paid Apple Developer account):
 ```bash
 MACKEY_SIGN_IDENTITY="Developer ID Application: Name (TEAMID)" ./scripts/package-dmg.sh
 # then notarize:
-xcrun notarytool submit dist/MacKey68-0.2.0.dmg \
+xcrun notarytool submit dist/MacKey68-0.3.0.dmg \
   --apple-id you@example.com --team-id TEAMID --password "$APP_PASSWORD" --wait
-xcrun stapler staple dist/MacKey68-0.2.0.dmg
+xcrun stapler staple dist/MacKey68-0.3.0.dmg
 ```
 
 The app icon is drawn in code; no source image is needed:
@@ -416,8 +420,9 @@ bàn phím vẽ ra tự đổi theo một trong ba layout:
 | `tkl` | 87 | Edra EK387 Pro, bàn phím TKL |
 | `full` | 104 | Bàn phím full-size có numpad |
 
-- App dò bàn phím ngoài khi khởi động và mỗi lần cắm/rút. Bàn phím built-in của Apple
-  và chuột chơi game có khai báo thêm keyboard collection sẽ bị bỏ qua.
+- App dò bàn phím ngoài khi khởi động và mỗi lần cắm/rút. Bàn phím mới được tự thêm với
+  layout nhận diện và nhận mapping ngay. Bàn phím built-in của Apple và chuột chơi game
+  có khai báo thêm keyboard collection sẽ bị bỏ qua.
 - Mở cửa sổ bàn phím, chọn bàn phím ở ô **Bàn phím**; ô **Layout** (68 / TKL / Full)
   đổi hình vẽ. Lựa chọn được lưu riêng cho từng thiết bị.
 - Mọi bàn phím đang bật đều nhận mapping của profile hiện tại, nên đổi bàn phím vẫn giữ
@@ -502,6 +507,8 @@ Trong cửa sổ đó:
   Menu bar cũng có mục **Ngôn ngữ / Language**.
 - Menu bar có **Tự chạy khi đăng nhập / Launch at login** — bản cài bằng DMG tự bật mục
   này ở lần mở đầu tiên.
+- Lần đầu mở có popup hướng dẫn 4 bước. Mở lại bằng menu bar → **Hướng dẫn…** hoặc nút
+  **?** trong cửa sổ.
 
 Mặc định có hai profile:
 
@@ -527,7 +534,7 @@ rm -rf ~/Applications/MacKey68.app
 ./scripts/package-dmg.sh
 ```
 
-Tạo `dist/MacKey68-0.2.0.dmg`: mở ra có app và lối tắt Applications để kéo vào. App tự
+Tạo `dist/MacKey68-0.3.0.dmg`: mở ra có app và lối tắt Applications để kéo vào. App tự
 đăng ký chạy khi đăng nhập ở lần mở đầu tiên, nên người dùng không cần Terminal.
 
 Về Gatekeeper, có ba mức:
@@ -543,9 +550,9 @@ Về Gatekeeper, có ba mức:
 ```bash
 MACKEY_SIGN_IDENTITY="Developer ID Application: Tên (TEAMID)" ./scripts/package-dmg.sh
 # sau đó notarize:
-xcrun notarytool submit dist/MacKey68-0.2.0.dmg \
+xcrun notarytool submit dist/MacKey68-0.3.0.dmg \
   --apple-id you@example.com --team-id TEAMID --password "$APP_PASSWORD" --wait
-xcrun stapler staple dist/MacKey68-0.2.0.dmg
+xcrun stapler staple dist/MacKey68-0.3.0.dmg
 ```
 
 Icon app được vẽ bằng code, không cần file ảnh nguồn:

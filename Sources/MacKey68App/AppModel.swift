@@ -42,6 +42,7 @@ final class AppModel: ObservableObject {
         .appendingPathComponent(".config/mackey/keymap.json")
 
     private static let languageKey = "MacKey68Language"
+    private static let guideKey = "MacKey68HasSeenGuide"
 
     @Published private(set) var config: KeymapConfig
     @Published private(set) var activeProfileID: String
@@ -53,6 +54,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var lastForeignApp: AppRef?
     /// Ngôn ngữ giao diện (VI/EN).
     @Published private(set) var language: Language
+    /// Popup hướng dẫn.
+    @Published var isShowingGuide = false
 
     /// Bật/tắt toàn bộ remap.
     @Published var enabled: Bool = true {
@@ -69,6 +72,7 @@ final class AppModel: ObservableObject {
 
     private var workspaceObserver: NSObjectProtocol?
     private var watcher: DeviceWatcher?
+    private var pendingDeviceSync: Task<Void, Never>?
     private var ready = false
 
     init() {
@@ -126,7 +130,7 @@ final class AppModel: ObservableObject {
             let entry = config.deviceConfig(for: device.id)
             choices.append(DeviceChoice(
                 device: device.id,
-                name: entry?.name.isEmpty == false ? entry!.name : device.label,
+                name: entry?.name.isEmpty == false ? entry!.name : Self.friendlyName(for: device),
                 layoutID: entry?.layoutID
                     ?? Layouts.detect(product: device.product,
                                       vendorID: device.vendorID,
@@ -158,7 +162,7 @@ final class AppModel: ObservableObject {
                                         productID: device.productID)
             config.devices = (config.devices ?? []) + [
                 DeviceConfig(device: device,
-                             name: detected?.label ?? device.description,
+                             name: detected.map(Self.friendlyName(for:)) ?? device.description,
                              layout: layout.rawValue)
             ]
         }
@@ -184,11 +188,7 @@ final class AppModel: ObservableObject {
     }
 
     func refreshDevices() {
-        let detected = HIDDevices.uniqueKeyboards()
-        availableDevices = detected
-        detectedDevice = config.device.flatMap { active in
-            detected.first { active.matches($0.id) }?.id
-        } ?? Self.preferredDevice(in: detected, config: config)?.id
+        syncDetectedDevices()
     }
 
     // MARK: - Profile
@@ -228,6 +228,27 @@ final class AppModel: ObservableObject {
         guard language != self.language else { return }
         self.language = language
         UserDefaults.standard.set(language.rawValue, forKey: Self.languageKey)
+    }
+
+    // MARK: - Guide
+
+    var hasSeenGuide: Bool {
+        UserDefaults.standard.bool(forKey: Self.guideKey)
+    }
+
+    /// Lần đầu mở cửa sổ bàn phím thì tự hiện hướng dẫn.
+    func presentGuideIfNeeded() {
+        guard !hasSeenGuide else { return }
+        isShowingGuide = true
+    }
+
+    func openGuide() {
+        isShowingGuide = true
+    }
+
+    func markGuideSeen() {
+        UserDefaults.standard.set(true, forKey: Self.guideKey)
+        isShowingGuide = false
     }
 
     func selectProfile(_ id: String) {
@@ -300,17 +321,67 @@ final class AppModel: ObservableObject {
     }
 
     private func handleAttach(_ device: HIDDevice) {
-        refreshDevices()
-        if config.device == nil {
-            config.device = device.id
-            persist()
-        }
-        detectedDevice = device.id
-        apply()
+        scheduleDeviceSync()
     }
 
     private func handleDetach() {
-        refreshDevices()
+        scheduleDeviceSync()
+    }
+
+    /// Gom nhiều sự kiện HID (mỗi bàn phím phát nhiều service) rồi dò lại một lần.
+    private func scheduleDeviceSync() {
+        pendingDeviceSync?.cancel()
+        pendingDeviceSync = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            guard !Task.isCancelled else { return }
+            self?.syncDetectedDevices()
+        }
+    }
+
+    /// Bàn phím vừa cắm được tự thêm vào danh sách với layout đoán được.
+    private func syncDetectedDevices() {
+        let detected = HIDDevices.uniqueKeyboards()
+        availableDevices = detected
+
+        var entries = config.devices ?? []
+        var changed = false
+
+        for device in detected {
+            let friendly = Self.friendlyName(for: device)
+            if let index = entries.firstIndex(where: { $0.device.matches(device.id) }) {
+                // Nâng tên chung chung ("SONiX USB DEVICE") thành tên dễ đọc.
+                if entries[index].name.isEmpty || entries[index].name == device.label,
+                   entries[index].name != friendly {
+                    entries[index].name = friendly
+                    changed = true
+                }
+                continue
+            }
+            entries.append(DeviceConfig(
+                device: device.id,
+                name: friendly,
+                layout: Layouts.detect(product: device.product,
+                                       vendorID: device.vendorID,
+                                       productID: device.productID).rawValue
+            ))
+            changed = true
+        }
+
+        let activeConnected = config.device.map { active in
+            detected.contains { active.matches($0.id) }
+        } ?? false
+        if !activeConnected,
+           let preferred = Self.preferredDevice(in: detected, config: config) {
+            config.device = preferred.id
+            changed = true
+        }
+
+        if changed { config.devices = entries }
+        detectedDevice = config.device.flatMap { active in
+            detected.first { active.matches($0.id) }?.id
+        } ?? Self.preferredDevice(in: detected, config: config)?.id
+
+        if changed { persist() }
         apply()
     }
 
@@ -415,28 +486,25 @@ final class AppModel: ObservableObject {
             guard !entries.contains(where: { $0.device.matches(device.id) }) else { return }
             entries.append(DeviceConfig(
                 device: device.id,
-                name: device.label,
+                name: friendlyName(for: device),
                 layout: Layouts.detect(product: device.product,
                                        vendorID: device.vendorID,
                                        productID: device.productID).rawValue
             ))
         }
 
+        detected.forEach(ensure)
+
         if let legacy = config.device,
            !entries.contains(where: { $0.device.matches(legacy) }) {
             let match = detected.first { legacy.matches($0.id) }
             entries.append(DeviceConfig(
                 device: legacy,
-                name: match?.label ?? legacy.description,
+                name: match.map(friendlyName(for:)) ?? legacy.description,
                 layout: Layouts.detect(product: match?.product ?? "",
                                        vendorID: legacy.vendorID,
                                        productID: legacy.productID).rawValue
             ))
-        }
-
-        // Chỉ thêm bàn phím đang được chọn làm active, không thêm mọi thứ đang cắm.
-        if let active = preferredDevice(in: detected, config: config) {
-            ensure(active)
         }
 
         if config.device == nil {
@@ -446,6 +514,15 @@ final class AppModel: ObservableObject {
         }
 
         config.devices = entries
+    }
+
+    /// Tên dễ đọc cho vài board đã gặp; còn lại dùng tên HID.
+    static func friendlyName(for device: HIDDevice) -> String {
+        switch String(format: "%04X:%04X", device.vendorID, device.productID) {
+        case "9AEA:1029": return "Ziyoulang K68"
+        case "0C45:7644": return "Edra EK387 Pro"
+        default: return device.label.isEmpty ? device.id.description : device.label
+        }
     }
 
     /// Cấu hình đầu tiên: Cmd sát Space, `` ` `` một phím, và khi vào game thì
