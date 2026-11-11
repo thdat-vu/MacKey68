@@ -7,7 +7,8 @@ mackey — remap a Ziyoulang/68-key keyboard into a Mac keyboard, without softwa
 from the vendor.
 
 USAGE
-  mackey list                      Kiểm tra bàn phím đang cắm (VID:PID)
+  mackey list                      Kiểm tra bàn phím đang cắm (VID:PID, layout)
+  mackey layouts                   Liệt kê layout vẽ được (68 / TKL / Full)
   mackey keys                      Liệt kê tên phím dùng được trong config
   mackey watch                     In ra mã phím thật khi bạn bấm (để dò Fn+...)
   mackey apply [--config FILE]     Áp dụng keymap
@@ -117,16 +118,24 @@ func describe(_ mappings: [ResolvedMapping]) -> String {
 func runList() {
     let devices = HIDDevices.all()
     guard !devices.isEmpty else { fail("không thấy thiết bị HID nào") }
-    let keyboards = devices.filter(\.isKeyboard)
+    let keyboards = HIDDevices.uniqueKeyboards()
+    let config = try? KeymapConfig.load(from: defaultConfigURL())
+
     print("Bàn phím:")
     if keyboards.isEmpty {
         print("  (không có)")
     }
-    for device in HIDDevices.uniqueKeyboards() {
-        print(String(format: "  %@  %@  [%@]",
+    for device in keyboards {
+        let layout = Layouts.detect(product: device.product,
+                                    vendorID: device.vendorID,
+                                    productID: device.productID)
+        let managed = config?.devices?.contains { $0.device.matches(device.id) } == true
+        print(String(format: "  %@  %@  [%@]  layout %@%@",
                      device.id.description,
                      device.label.isEmpty ? "(không tên)" : device.label,
-                     device.transport.isEmpty ? "?" : device.transport))
+                     device.transport.isEmpty ? "?" : device.transport,
+                     layout.shortName,
+                     managed ? "  · đã quản lý" : ""))
     }
     print("")
     print("Cổng USB đang cắm (những thứ khác):")
@@ -136,6 +145,14 @@ func runList() {
         guard seen.insert(key).inserted else { continue }
         print(String(format: "  %@  %@", device.id.description,
                      device.label.isEmpty ? "(không tên)" : device.label))
+    }
+}
+
+func runLayouts() {
+    for id in LayoutID.allCases {
+        let layout = Layouts.layout(for: id)
+        print(String(format: "  %-4@  %-20@  %3d phím  %5.2f unit",
+                     id.shortName, layout.name, id.keyCount, layout.unitCount))
     }
 }
 
@@ -157,10 +174,29 @@ func runApply(_ options: Options) {
     } catch {
         fail("\(error)")
     }
-    let device = effectiveDevice(config, options)
+
+    let connected = HIDDevices.uniqueKeyboards()
+    let targets: [DeviceID]
+    if let device = options.device {
+        targets = [device]
+    } else {
+        let managed = config.enabledDevices.filter { entry in
+            connected.contains { entry.device.matches($0.id) }
+        }
+        targets = managed.isEmpty
+            ? [config.device].compactMap { $0 }
+            : managed.map(\.device)
+    }
+    guard !targets.isEmpty else {
+        fail("chưa thấy bàn phím nào đang cắm")
+    }
 
     print("Config: \(url.path)")
-    print("Áp dụng cho: \(device?.description ?? "tất cả bàn phím")")
+    print("Áp dụng cho:")
+    for target in targets {
+        let name = connected.first { target.matches($0.id) }?.label ?? target.description
+        print("  \(target.description)  \(name)")
+    }
     print("Mapping:")
     print(mappings.isEmpty ? "  (trống)" : describe(mappings))
 
@@ -170,9 +206,11 @@ func runApply(_ options: Options) {
     }
 
     do {
-        let output = try HIDUtil.apply(mappings, matching: device)
-        if !output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            print("\n\(output.trimmingCharacters(in: .whitespacesAndNewlines))")
+        for target in targets {
+            let output = try HIDUtil.apply(mappings, matching: target)
+            if !output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                print("\n\(output.trimmingCharacters(in: .whitespacesAndNewlines))")
+            }
         }
         print("\nXong. Remap chỉ mất khi rút bàn phím ra — dùng `mackey install-agent` để giữ nó.")
     } catch {
@@ -384,6 +422,33 @@ func runSelftest() -> Never {
     check(!DeviceID(vendorID: 1, productID: 2).matches(DeviceID(vendorID: 1, productID: 3)),
           "product mismatch")
 
+    print("Layouts")
+    check(Layouts.all.count == 3, "three layouts available")
+    for id in LayoutID.allCases {
+        let layout = Layouts.layout(for: id)
+        let ids = layout.keys.map(\.id)
+        check(Set(ids).count == ids.count, "\(id.shortName): key ids unique")
+        check(Set(layout.rows.map(\.id)).count == layout.rows.count,
+              "\(id.shortName): row ids unique")
+        check(layout.rows.allSatisfy { abs($0.unitWidth - layout.unitCount) < 0.001 },
+              "\(id.shortName): rows are \(layout.unitCount) units wide")
+        check(layout.keys.contains { $0.usage == 0x2C }, "\(id.shortName): has spacebar")
+        check(layout.keys.contains { $0.usage == 0xE0 }, "\(id.shortName): has left control")
+    }
+    check(Layouts.detect(product: "OnMicro K68 BT5.0", vendorID: 0x9AEA, productID: 0x1029) == .k68,
+          "detect K68")
+    check(Layouts.detect(product: "SONiX USB DEVICE", vendorID: 0x0C45, productID: 0x7644) == .tkl,
+          "detect Edra EK387 Pro as TKL")
+    check(Layouts.detect(product: "Generic 104 keyboard", vendorID: nil, productID: nil) == .full,
+          "detect full-size by name")
+    let k68 = Layouts.layout(for: .k68)
+    check(k68.keys.first { $0.usage == 0x39 }?.label == "caps", "K68 caps key present")
+    let full = Layouts.layout(for: .full)
+    check(full.keys.filter { (0x53...0x63).contains(Int($0.usage)) }.count >= 17,
+          "full-size has numpad keys")
+    check(Layouts.layout(for: .tkl).keys.contains { $0.usage == 0x4B },
+          "TKL has PageUp")
+
     print("")
     if failures == 0 {
         print("Tất cả ok.")
@@ -399,6 +464,7 @@ let options = parseOptions(Array(CommandLine.arguments.dropFirst()))
 
 switch options.command {
 case "list": runList()
+case "layouts": runLayouts()
 case "keys": runKeys()
 case "watch": runWatch()
 case "apply": runApply(options)

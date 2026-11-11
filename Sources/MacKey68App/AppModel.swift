@@ -10,11 +10,25 @@ struct AppRef: Equatable {
     var name: String
 }
 
+/// Một bàn phím để hiện trong picker (đang cắm hoặc đã cấu hình trước đó).
+struct DeviceChoice: Identifiable, Equatable {
+    var device: DeviceID
+    var name: String
+    var layoutID: LayoutID
+    var online: Bool
+
+    var id: String { device.description }
+    var label: String {
+        let suffix = online ? "" : " · offline"
+        return "\(name.isEmpty ? device.description : name)\(suffix)"
+    }
+}
+
 /// Trạng thái remap, giữ dạng cấu trúc để đổi ngôn ngữ không phải áp lại.
 enum Status: Equatable {
     case notApplied
     case noDevice
-    case applied(profile: String, count: Int, device: String)
+    case applied(profile: String, count: Int, deviceCount: Int)
     case disabled
     case configWriteFailed(String)
     case failed(String)
@@ -33,6 +47,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var activeProfileID: String
     @Published private(set) var status: Status = .notApplied
     @Published private(set) var detectedDevice: DeviceID?
+    @Published private(set) var availableDevices: [HIDDevice] = []
     @Published var selectedKey: LayoutKey?
     /// App không phải MacKey68 vừa được kích hoạt, dùng cho nút "gắn profile".
     @Published private(set) var lastForeignApp: AppRef?
@@ -52,8 +67,6 @@ final class AppModel: ObservableObject {
         }
     }
 
-    let layout = Layouts.k68
-
     private var workspaceObserver: NSObjectProtocol?
     private var watcher: DeviceWatcher?
     private var ready = false
@@ -62,19 +75,29 @@ final class AppModel: ObservableObject {
         let stored = UserDefaults.standard.string(forKey: Self.languageKey)
         self.language = Language(rawValue: stored ?? "") ?? .vi
 
-        let loaded = (try? KeymapConfig.load(from: Self.configURL)) ?? Self.seedConfig()
+        let detected = HIDDevices.uniqueKeyboards()
+        let loaded = (try? KeymapConfig.load(from: Self.configURL))
+            ?? Self.seedConfig(detected: detected)
         var config = loaded
         // Luôn chuẩn hoá về dạng profiles để phần sửa key có chỗ ghi.
         if config.profiles == nil || config.profiles?.isEmpty == true {
             config.profiles = config.allProfiles
             config.mappings = nil
         }
+        Self.migrateDevices(&config, detected: detected)
+
         self.config = config
         self.activeProfileID = config.defaultProfile.id
-        self.detectedDevice = Self.detectDevice() ?? config.device
-        if config.device == nil, let detected = detectedDevice {
-            self.config.device = detected
+        self.availableDevices = detected
+        let activeIsConnected = config.device.map { active in
+            detected.contains { active.matches($0.id) }
+        } ?? false
+        if !activeIsConnected {
+            self.config.device = Self.preferredDevice(in: detected, config: config)?.id
         }
+        self.detectedDevice = config.device.flatMap { active in
+            detected.first { active.matches($0.id) }?.id
+        } ?? Self.preferredDevice(in: detected, config: config)?.id
 
         ready = true
         persist()
@@ -82,6 +105,90 @@ final class AppModel: ObservableObject {
         noteForeign(NSWorkspace.shared.frontmostApplication)
         observeFrontmostApp()
         startWatchingDevices()
+    }
+
+    // MARK: - Device + layout
+
+    /// Layout to draw for the selected keyboard.
+    var layoutID: LayoutID {
+        guard let active = config.device,
+              let entry = config.deviceConfig(for: active) else { return .tkl }
+        return entry.layoutID
+    }
+
+    var layout: KeyboardLayout { Layouts.layout(for: layoutID) }
+
+    var deviceChoices: [DeviceChoice] {
+        var choices: [DeviceChoice] = []
+        var seen = Set<String>()
+
+        for device in availableDevices {
+            let entry = config.deviceConfig(for: device.id)
+            choices.append(DeviceChoice(
+                device: device.id,
+                name: entry?.name.isEmpty == false ? entry!.name : device.label,
+                layoutID: entry?.layoutID
+                    ?? Layouts.detect(product: device.product,
+                                      vendorID: device.vendorID,
+                                      productID: device.productID),
+                online: true
+            ))
+            seen.insert(device.id.description)
+        }
+
+        for entry in config.devices ?? [] where !seen.contains(entry.id) {
+            choices.append(DeviceChoice(device: entry.device,
+                                        name: entry.name,
+                                        layoutID: entry.layoutID,
+                                        online: false))
+        }
+
+        return choices.sorted {
+            if $0.online != $1.online { return $0.online }
+            return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
+    }
+
+    func selectDevice(_ device: DeviceID) {
+        config.device = device
+        if config.deviceConfig(for: device) == nil {
+            let detected = availableDevices.first { $0.id == device }
+            let layout = Layouts.detect(product: detected?.product ?? "",
+                                        vendorID: device.vendorID,
+                                        productID: device.productID)
+            config.devices = (config.devices ?? []) + [
+                DeviceConfig(device: device,
+                             name: detected?.label ?? device.description,
+                             layout: layout.rawValue)
+            ]
+        }
+        selectedKey = nil
+        persist()
+        apply()
+    }
+
+    func setLayout(_ layout: LayoutID) {
+        guard let active = config.device else { return }
+        var devices = config.devices ?? []
+
+        if let index = devices.firstIndex(where: { $0.device.matches(active) }) {
+            devices[index].layout = layout.rawValue
+        } else {
+            devices.append(DeviceConfig(device: active,
+                                        name: active.description,
+                                        layout: layout.rawValue))
+        }
+        config.devices = devices
+        selectedKey = nil
+        persist()
+    }
+
+    func refreshDevices() {
+        let detected = HIDDevices.uniqueKeyboards()
+        availableDevices = detected
+        detectedDevice = config.device.flatMap { active in
+            detected.first { active.matches($0.id) }?.id
+        } ?? Self.preferredDevice(in: detected, config: config)?.id
     }
 
     // MARK: - Profile
@@ -95,11 +202,14 @@ final class AppModel: ObservableObject {
         case .notApplied:
             return t("Chưa áp dụng", "Not applied")
         case .noDevice:
-            return t("Chưa thấy bàn phím — cắm K68 vào nhé",
-                     "Keyboard not found — plug in the K68")
-        case .applied(let profile, let count, let device):
-            return t("\(profile) · \(count) phím · \(device)",
-                     "\(profile) · \(count) keys · \(device)")
+            return t("Chưa thấy bàn phím nào — cắm bàn phím vào nhé",
+                     "No keyboard found — plug one in")
+        case .applied(let profile, let count, let deviceCount):
+            let devices = deviceCount == 1
+                ? t("1 bàn phím", "1 keyboard")
+                : t("\(deviceCount) bàn phím", "\(deviceCount) keyboards")
+            return t("\(profile) · \(count) phím · \(devices)",
+                     "\(profile) · \(count) keys · \(devices)")
         case .disabled:
             return t("Đang tắt", "Disabled")
         case .configWriteFailed(let message):
@@ -149,7 +259,6 @@ final class AppModel: ObservableObject {
         if config.profiles?[index].autoFor.contains(app.id) != true {
             config.profiles?[index].autoFor.append(app.id)
         }
-        // Profile này không còn là profile "mặc định" nếu nó đã gắn với app.
         persist()
         apply()
     }
@@ -177,22 +286,31 @@ final class AppModel: ObservableObject {
     }
 
     private func startWatchingDevices() {
-        let watcher = DeviceWatcher(matching: nil) { [weak self] device in
-            Task { @MainActor in self?.handleAttach(device) }
-        }
+        let watcher = DeviceWatcher(
+            matching: nil,
+            onAttach: { [weak self] device in
+                Task { @MainActor in self?.handleAttach(device) }
+            },
+            onDetach: { [weak self] _ in
+                Task { @MainActor in self?.handleDetach() }
+            }
+        )
         self.watcher = watcher
         watcher.start()
     }
 
     private func handleAttach(_ device: HIDDevice) {
-        guard config.device?.matches(device.id) == true
-                || (config.device == nil && device.product.localizedCaseInsensitiveContains("K68"))
-        else { return }
+        refreshDevices()
         if config.device == nil {
             config.device = device.id
             persist()
         }
         detectedDevice = device.id
+        apply()
+    }
+
+    private func handleDetach() {
+        refreshDevices()
         apply()
     }
 
@@ -222,27 +340,45 @@ final class AppModel: ObservableObject {
     func apply() {
         guard ready else { return }
 
-        guard let device = config.device else {
+        let connected = availableDevices
+        var targets = config.enabledDevices.filter { entry in
+            connected.contains { entry.device.matches($0.id) }
+        }
+        // Config cũ chỉ có `device`, chưa có `devices`.
+        if targets.isEmpty,
+           let legacy = config.device,
+           connected.contains(where: { legacy.matches($0.id) }) {
+            targets = [DeviceConfig(device: legacy,
+                                    name: legacy.description,
+                                    layout: Layouts.detect(product: "",
+                                                           vendorID: legacy.vendorID,
+                                                           productID: legacy.productID).rawValue)]
+        }
+        guard !targets.isEmpty else {
             status = .noDevice
             return
         }
 
         do {
+            let resolved = try KeymapResolver.resolve(activeProfile.mappings)
             if enabled {
-                let resolved = try KeymapResolver.resolve(activeProfile.mappings)
-                _ = try HIDUtil.apply(resolved, matching: device)
-                status = .applied(profile: activeProfile.name,
-                                  count: resolved.count,
-                                  device: device.description)
+                for target in targets {
+                    _ = try HIDUtil.apply(resolved, matching: target.device)
+                }
             } else {
-                _ = try HIDUtil.reset(matching: device)
-                status = .disabled
+                for target in targets {
+                    _ = try HIDUtil.reset(matching: target.device)
+                }
             }
+            status = enabled
+                ? .applied(profile: activeProfile.name,
+                           count: resolved.count,
+                           deviceCount: targets.count)
+                : .disabled
         } catch {
             status = .failed(String(describing: error))
         }
     }
-
 
     private func persist() {
         do {
@@ -258,18 +394,75 @@ final class AppModel: ObservableObject {
         KeyCodes.name(for: usage) ?? String(format: "0x%02X", usage)
     }
 
-    private static func detectDevice() -> DeviceID? {
-        HIDDevices.uniqueKeyboards()
-            .first { $0.product.localizedCaseInsensitiveContains("K68") }?
-            .id
+    private static func preferredDevice(in detected: [HIDDevice],
+                                        config: KeymapConfig) -> HIDDevice? {
+        if let active = config.device,
+           let match = detected.first(where: { active.matches($0.id) }) {
+            return match
+        }
+        return detected.first { $0.product.localizedCaseInsensitiveContains("K68") }
+            ?? detected.first { $0.product.localizedCaseInsensitiveContains("EK387") }
+            ?? detected.first
+    }
+
+    /// Bổ sung entry cho bàn phím đang dùng, giữ entry cũ. Không tự thêm mọi
+    /// thiết bị HID: chuột chơi game cũng có thể khai báo một keyboard collection.
+    private static func migrateDevices(_ config: inout KeymapConfig,
+                                       detected: [HIDDevice]) {
+        var entries = config.devices ?? []
+
+        func ensure(_ device: HIDDevice) {
+            guard !entries.contains(where: { $0.device.matches(device.id) }) else { return }
+            entries.append(DeviceConfig(
+                device: device.id,
+                name: device.label,
+                layout: Layouts.detect(product: device.product,
+                                       vendorID: device.vendorID,
+                                       productID: device.productID).rawValue
+            ))
+        }
+
+        if let legacy = config.device,
+           !entries.contains(where: { $0.device.matches(legacy) }) {
+            let match = detected.first { legacy.matches($0.id) }
+            entries.append(DeviceConfig(
+                device: legacy,
+                name: match?.label ?? legacy.description,
+                layout: Layouts.detect(product: match?.product ?? "",
+                                       vendorID: legacy.vendorID,
+                                       productID: legacy.productID).rawValue
+            ))
+        }
+
+        // Chỉ thêm bàn phím đang được chọn làm active, không thêm mọi thứ đang cắm.
+        if let active = preferredDevice(in: detected, config: config) {
+            ensure(active)
+        }
+
+        if config.device == nil {
+            config.device = entries.first { entry in
+                detected.contains { entry.device.matches($0.id) }
+            }?.device
+        }
+
+        config.devices = entries
     }
 
     /// Cấu hình đầu tiên: Cmd sát Space, `` ` `` một phím, và khi vào game thì
     /// nhường chỗ đó lại cho Alt.
-    static func seedConfig() -> KeymapConfig {
-        KeymapConfig(
-            name: "K68",
-            device: detectDevice(),
+    static func seedConfig(detected: [HIDDevice] = HIDDevices.uniqueKeyboards()) -> KeymapConfig {
+        let devices = detected.map { device in
+            DeviceConfig(device: device.id,
+                         name: device.label,
+                         layout: Layouts.detect(product: device.product,
+                                                vendorID: device.vendorID,
+                                                productID: device.productID).rawValue)
+        }
+        return KeymapConfig(
+            name: "MacKey68",
+            device: devices.first(where: { $0.device.vendorID == 0x9AEA })?.device
+                ?? devices.first?.device,
+            devices: devices,
             mappings: nil,
             profiles: [
                 Profile(

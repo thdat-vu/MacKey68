@@ -14,7 +14,8 @@ supports this board (sharkfin covers 1400+ ROYUAN boards but not Ziyoulang; VIA/
 doesn't either, since this isn't a QMK board).
 
 But **you don't need vendor software**. This board (OnMicro BLE) emits standard HID
-usages, so it can be remapped cleanly at the OS level. This repo is that app.
+usages, so it can be remapped cleanly at the OS level. This repo is that app. It also
+handles other standard HID keyboards: 65%/68-key, TKL and full-size boards.
 
 <p align="center">
   <img src="docs/screenshots/mackey68-board.png"
@@ -47,6 +48,29 @@ Its HID report descriptor shows:
 Key consequence: **Fn is handled in firmware**, so `Fn+...` emits a normal HID usage
 (for example `Fn+PgUp` → `Home`). OS-level remapping therefore works even for keys
 that are only reachable through Fn.
+
+## Multiple keyboards and layouts
+
+MacKey68 isn't tied to the K68. Any external keyboard that speaks standard HID can be
+managed, and the drawn board adapts to one of three layouts:
+
+| Layout | Keys | Typical boards |
+|---|---|---|
+| `68` | 68 | Ziyoulang K68, most 65% boards |
+| `tkl` | 87 | Edra EK387 Pro, TKL boards |
+| `full` | 104 | Full-size boards with a numpad |
+
+- The app scans external keyboards at launch and on every plug/unplug. The built-in
+  Apple keyboard and gaming mice that expose a stray keyboard collection are ignored.
+- Open the keyboard window and use the **Keyboard** picker to switch boards; the
+  **Layout** picker (68 / TKL / Full) changes the drawing. The choice is saved per
+  device.
+- Every enabled keyboard receives the active profile's mappings, so swapping one board
+  for another keeps the Mac layout. `mackey list` shows each board plus its detected
+  layout, and `mackey layouts` lists the three layouts.
+
+> The Edra EK387 Pro appears as `SONiX USB DEVICE` (`0x0C45:0x7644`). It is detected as
+> TKL automatically; if a board is guessed wrong, change the Layout picker once.
 
 ## Three ways to get a Mac layout
 
@@ -177,7 +201,8 @@ The app icon is drawn in code; no source image is needed:
 ## Usage
 
 ```bash
-mackey list                 # list keyboards + VID:PID
+mackey list                 # list keyboards + VID:PID + detected layout
+mackey layouts              # layouts the app can draw (68 / TKL / Full)
 mackey watch                # print real usages as you type (needs Input Monitoring)
 mackey keys                 # key names accepted in the config
 mackey init                 # create ~/.config/mackey/keymap.json
@@ -199,8 +224,22 @@ really sends.
 
 ```json
 {
-  "name": "K68 on macOS",
+  "name": "MacKey68",
   "device": { "vendorID": 39658, "productID": 4137 },
+  "devices": [
+    {
+      "device": { "vendorID": 39658, "productID": 4137 },
+      "name": "Ziyoulang K68",
+      "layout": "68",
+      "enabled": true
+    },
+    {
+      "device": { "vendorID": 3141, "productID": 30276 },
+      "name": "Edra EK387 Pro (SONiX)",
+      "layout": "tkl",
+      "enabled": true
+    }
+  ],
   "profiles": [
     {
       "id": "mac",
@@ -223,12 +262,15 @@ really sends.
 }
 ```
 
+- `devices`: every managed keyboard. `layout` is `68`, `tkl` or `full`; `enabled`
+  controls whether it receives mappings. `device` (top level) is just the keyboard
+  selected in the UI / used by the CLI by default.
 - `autoFor`: bundle ids that auto-activate the profile. Matched **exactly or by
   prefix**, so `com.riotgames.` matches every Riot bundle. A profile with an empty
   `autoFor` is the fallback when nothing matches.
 - The older `mappings`-only format still loads and is upgraded to a `default` profile.
-- The app rewrites this config whenever you change a key or link an app; after editing
-  by hand, reopen the app (or click **Reapply** in the menu).
+- The app rewrites this config whenever you change a key, a layout or link an app;
+  after editing by hand, reopen the app (or click **Reapply** in the menu).
 
 `vendorID`/`productID` are decimal (`0x9AEA` = 39658, `0x1029` = 4137). Leave them
 `null` to apply to every keyboard.
@@ -245,6 +287,8 @@ Key names accept common spellings: `Cmd`, `Command`, `Win`, `Opt`, `Option`, `Al
   currently exist). `mackey install-agent` runs in the background and reapplies on every
   attach.
 - The `Fn` key itself can't be remapped (firmware owns it).
+- Drawn layouts are ANSI. ISO/JIS boards still work, but their Enter/left-Shift shapes
+  aren't drawn; pick the closest layout.
 
 ### If you need more
 
@@ -326,7 +370,8 @@ bên thứ ba nào nhận đúng board này (sharkfin hỗ trợ 1400+ board ROY
 Ziyoulang; VIA/QMK cũng không, vì đây không phải board QMK).
 
 Nhưng **không cần app của hãng**. Board này (OnMicro BLE) chỉ gửi HID usage chuẩn, nên
-có thể remap sạch ở tầng hệ điều hành. Repo này là app làm việc đó.
+có thể remap sạch ở tầng hệ điều hành. Repo này là app làm việc đó. App cũng nhận các
+bàn phím HID chuẩn khác: 65%/68 phím, TKL và full-size.
 
 <p align="center">
   <img src="docs/screenshots/mackey68-board.png"
@@ -359,6 +404,28 @@ Bàn phím:
 Hệ quả quan trọng: **Fn là xử lý trong firmware**, nên `Fn+...` sẽ phát ra một HID usage
 bình thường (ví dụ `Fn+PgUp` → `Home`). Vì vậy remap ở macOS hoạt động được với cả
 những phím chỉ bấm được qua Fn.
+
+## Nhiều bàn phím và nhiều layout
+
+MacKey68 không gắn chặt với K68. Bàn phím ngoài nào gửi HID chuẩn đều quản lý được, và
+bàn phím vẽ ra tự đổi theo một trong ba layout:
+
+| Layout | Số phím | Bàn phím tiêu biểu |
+|---|---|---|
+| `68` | 68 | Ziyoulang K68, phần lớn bàn phím 65% |
+| `tkl` | 87 | Edra EK387 Pro, bàn phím TKL |
+| `full` | 104 | Bàn phím full-size có numpad |
+
+- App dò bàn phím ngoài khi khởi động và mỗi lần cắm/rút. Bàn phím built-in của Apple
+  và chuột chơi game có khai báo thêm keyboard collection sẽ bị bỏ qua.
+- Mở cửa sổ bàn phím, chọn bàn phím ở ô **Bàn phím**; ô **Layout** (68 / TKL / Full)
+  đổi hình vẽ. Lựa chọn được lưu riêng cho từng thiết bị.
+- Mọi bàn phím đang bật đều nhận mapping của profile hiện tại, nên đổi bàn phím vẫn giữ
+  layout Mac. `mackey list` hiện từng bàn phím kèm layout nhận diện; `mackey layouts`
+  liệt kê ba layout.
+
+> Edra EK387 Pro hiện lên là `SONiX USB DEVICE` (`0x0C45:0x7644`) và được nhận diện là
+> TKL. Nếu đoán sai, chỉ cần đổi ô Layout một lần.
 
 ## Ba tầng để "ra layout Mac"
 
@@ -423,6 +490,8 @@ mackey board
 
 Trong cửa sổ đó:
 
+- Ô **Bàn phím** chọn bàn phím đang quản lý; ô **Layout** chọn 68 / TKL / Full để đổi
+  hình vẽ. Nút ↻ dò lại bàn phím vừa cắm.
 - Bấm một phím trên hình để chọn, rồi chọn phím đích. Phím đã đổi hiện màu xanh và
   vẫn giữ nhãn gốc ở góc để không bị lẫn.
 - **Tự đổi khi mở:** mỗi profile có danh sách app. Nút `+ TênApp` gắn profile đang chọn
@@ -488,7 +557,8 @@ Icon app được vẽ bằng code, không cần file ảnh nguồn:
 ## Dùng
 
 ```bash
-mackey list                 # xem bàn phím + VID:PID
+mackey list                 # xem bàn phím + VID:PID + layout nhận diện
+mackey layouts              # các layout vẽ được (68 / TKL / Full)
 mackey watch                # in ra usage thật khi bạn bấm (cần Input Monitoring)
 mackey keys                 # tên phím dùng được trong config
 mackey init                 # tạo ~/.config/mackey/keymap.json
@@ -509,8 +579,22 @@ Input Monitoring → bật cho Terminal). Đây là công cụ để dò xem `Fn
 
 ```json
 {
-  "name": "K68 on macOS",
+  "name": "MacKey68",
   "device": { "vendorID": 39658, "productID": 4137 },
+  "devices": [
+    {
+      "device": { "vendorID": 39658, "productID": 4137 },
+      "name": "Ziyoulang K68",
+      "layout": "68",
+      "enabled": true
+    },
+    {
+      "device": { "vendorID": 3141, "productID": 30276 },
+      "name": "Edra EK387 Pro (SONiX)",
+      "layout": "tkl",
+      "enabled": true
+    }
+  ],
   "profiles": [
     {
       "id": "mac",
@@ -533,12 +617,15 @@ Input Monitoring → bật cho Terminal). Đây là công cụ để dò xem `Fn
 }
 ```
 
+- `devices`: mọi bàn phím được quản lý. `layout` là `68`, `tkl` hoặc `full`; `enabled`
+  quyết định bàn phím đó có nhận mapping không. `device` ở ngoài cùng chỉ là bàn phím
+  đang chọn trong UI / dùng mặc định cho CLI.
 - `autoFor`: bundle id của app mà profile tự bật. So khớp **chính xác hoặc theo tiền
   tố**, nên `com.riotgames.` bắt mọi bundle của Riot. Profile có `autoFor` rỗng là
   profile mặc định khi không app nào khớp.
 - Dạng cũ chỉ có `mappings` vẫn đọc được và được nâng thành một profile `default`.
-- App ghi config này mỗi khi bạn đổi phím hoặc gắn app, nên sửa tay xong chỉ cần mở lại
-  app (hoặc bấm **Áp dụng lại** trên menu).
+- App ghi config này mỗi khi bạn đổi phím, đổi layout hoặc gắn app, nên sửa tay xong chỉ
+  cần mở lại app (hoặc bấm **Áp dụng lại** trên menu).
 
 `vendorID`/`productID` là số thập phân (`0x9AEA` = 39658, `0x1029` = 4137). Để `null`
 thì áp dụng cho mọi bàn phím.
@@ -554,6 +641,8 @@ Tên phím chấp nhận cả cách viết thường dùng: `Cmd`, `Command`, `W
 - Remap mất khi **rút bàn phím ra** (vì hidutil chỉ sửa những thiết bị đang tồn tại).
   `mackey install-agent` chạy nền và áp lại mỗi lần bàn phím được cắm vào.
 - Không remap được phím `Fn` (firmware giữ nó).
+- Hình vẽ là layout ANSI. Bàn phím ISO/JIS vẫn dùng được nhưng phím Enter/Shift trái
+  không vẽ đúng hình; chọn layout gần nhất.
 
 ### Nếu cần nhiều hơn
 

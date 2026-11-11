@@ -39,6 +39,7 @@ enum Display {
         case 0x38: return "/"
         case 0x39: return "caps"
         case 0x46: return "prtsc"
+        case 0x47: return "scrlk"
         case 0x48: return "pause"
         case 0x49: return "ins"
         case 0x65: return "menu"
@@ -52,6 +53,24 @@ enum Display {
         case 0x50: return "←"
         case 0x51: return "↓"
         case 0x52: return "↑"
+        case 0x53: return "num"
+        case 0x54: return "/"
+        case 0x55: return "*"
+        case 0x56: return "-"
+        case 0x57: return "+"
+        case 0x58: return "⏎"
+        case 0x59: return "1"
+        case 0x5A: return "2"
+        case 0x5B: return "3"
+        case 0x5C: return "4"
+        case 0x5D: return "5"
+        case 0x5E: return "6"
+        case 0x5F: return "7"
+        case 0x60: return "8"
+        case 0x61: return "9"
+        case 0x62: return "0"
+        case 0x63: return "."
+        case 0x67: return "="
         default:
             return (KeyCodes.name(for: usage) ?? "?").lowercased()
         }
@@ -139,9 +158,14 @@ struct KeyCapView: View {
 struct BoardView: View {
     @EnvironmentObject private var model: AppModel
 
+    private var aspectRatio: CGFloat {
+        let rows = CGFloat(max(1, model.layout.rows.count))
+        return CGFloat(model.layout.unitCount) / (rows * 0.98)
+    }
+
     var body: some View {
         Color.clear
-            .aspectRatio(3.5, contentMode: .fit)
+            .aspectRatio(aspectRatio, contentMode: .fit)
             .overlay {
                 GeometryReader { geo in
                     let gap: CGFloat = 5
@@ -152,15 +176,21 @@ struct BoardView: View {
                         ForEach(model.layout.rows) { row in
                             HStack(spacing: gap) {
                                 ForEach(row.keys) { key in
-                                    KeyCapView(
-                                        key: key,
-                                        unit: unit,
-                                        destination: model.destination(for: key),
-                                        isSelected: model.selectedKey?.id == key.id,
-                                        fnHelp: model.t("Fn do firmware giữ, không remap được",
-                                                        "Fn is handled by firmware and can't be remapped")
-                                    ) {
-                                        model.selectedKey = key
+                                    if key.isSpacer {
+                                        Color.clear
+                                            .frame(width: max(0, key.width * unit - gap),
+                                                   height: unit * 0.92)
+                                    } else {
+                                        KeyCapView(
+                                            key: key,
+                                            unit: unit,
+                                            destination: model.destination(for: key),
+                                            isSelected: model.selectedKey?.id == key.id,
+                                            fnHelp: model.t("Fn do firmware giữ, không remap được",
+                                                            "Fn is handled by firmware and can't be remapped")
+                                        ) {
+                                            model.selectedKey = key
+                                        }
                                     }
                                 }
                             }

@@ -7,8 +7,10 @@ import IOKit
 /// This watches the IORegistry for HID devices appearing and re-applies.
 public final class DeviceWatcher {
     public typealias Handler = (HIDDevice) -> Void
+    public typealias DetachHandler = (DeviceID) -> Void
 
     private let onAttach: Handler
+    private let onDetach: DetachHandler?
     private let wanted: DeviceID?
     private var notifyPort: IONotificationPortRef?
     private var arrivalIterator: io_iterator_t = 0
@@ -16,9 +18,12 @@ public final class DeviceWatcher {
     private var applied = Set<DeviceID>()
 
     /// - Parameter matching: when set, only that vendor/product is reported.
-    public init(matching: DeviceID? = nil, onAttach: @escaping Handler) {
+    public init(matching: DeviceID? = nil,
+                onAttach: @escaping Handler,
+                onDetach: DetachHandler? = nil) {
         self.wanted = matching
         self.onAttach = onAttach
+        self.onDetach = onDetach
     }
 
     public func start() {
@@ -73,6 +78,7 @@ public final class DeviceWatcher {
             defer { IOObjectRelease(service) }
             guard let device = read(service) else { continue }
             applied.remove(device.id)
+            onDetach?(device.id)
         }
     }
 

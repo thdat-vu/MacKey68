@@ -47,9 +47,37 @@ public struct KeyMapping: Codable, Equatable {
     }
 }
 
+/// One managed keyboard: which board it is and which drawn layout to use.
+public struct DeviceConfig: Codable, Equatable, Identifiable {
+    public var device: DeviceID
+    public var name: String
+    /// LayoutID raw value: "68", "tkl" or "full".
+    public var layout: String
+    public var enabled: Bool
+
+    public var id: String { device.description }
+
+    public var layoutID: LayoutID {
+        LayoutID(rawValue: layout.lowercased()) ?? .tkl
+    }
+
+    public init(device: DeviceID,
+                name: String = "",
+                layout: String = LayoutID.tkl.rawValue,
+                enabled: Bool = true) {
+        self.device = device
+        self.name = name
+        self.layout = layout
+        self.enabled = enabled
+    }
+}
+
 public struct KeymapConfig: Codable {
     public var name: String?
+    /// Keyboard used by the CLI when no --device is given, and the one shown first.
     public var device: DeviceID?
+    /// Every keyboard the app manages, with its own drawn layout.
+    public var devices: [DeviceConfig]?
     /// Dạng cũ (một bộ mapping duy nhất). Vẫn đọc được.
     public var mappings: [KeyMapping]?
     /// Nhiều bộ mapping, có thể gắn với app để tự chuyển.
@@ -57,12 +85,22 @@ public struct KeymapConfig: Codable {
 
     public init(name: String? = nil,
                 device: DeviceID? = nil,
+                devices: [DeviceConfig]? = nil,
                 mappings: [KeyMapping]? = nil,
                 profiles: [Profile]? = nil) {
         self.name = name
         self.device = device
+        self.devices = devices
         self.mappings = mappings
         self.profiles = profiles
+    }
+
+    public func deviceConfig(for device: DeviceID) -> DeviceConfig? {
+        devices?.first { $0.device.matches(device) }
+    }
+
+    public var enabledDevices: [DeviceConfig] {
+        (devices ?? []).filter(\.enabled)
     }
 
     /// Luôn có ít nhất một profile; config cũ được nâng thành profile "default".

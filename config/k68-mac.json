@@ -1,6 +1,20 @@
 {
-  "name": "K68 on macOS",
+  "name": "MacKey68",
   "device": { "vendorID": 39658, "productID": 4137 },
+  "devices": [
+    {
+      "device": { "vendorID": 39658, "productID": 4137 },
+      "name": "Ziyoulang K68",
+      "layout": "68",
+      "enabled": true
+    },
+    {
+      "device": { "vendorID": 3141, "productID": 30276 },
+      "name": "Edra EK387 Pro (SONiX)",
+      "layout": "tkl",
+      "enabled": true
+    }
+  ],
   "profiles": [
     {
       "id": "mac",

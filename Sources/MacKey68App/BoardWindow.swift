@@ -8,6 +8,7 @@ struct BoardWindow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
+            deviceRow
             linkRow
             BoardView()
             Divider()
@@ -56,6 +57,62 @@ struct BoardWindow: View {
 
             Toggle(model.t("Bật", "On"), isOn: $model.enabled)
                 .toggleStyle(.switch)
+        }
+    }
+
+    /// Bàn phím đang chọn + layout vẽ ra (68 / TKL / Full).
+    private var deviceRow: some View {
+        HStack(spacing: 10) {
+            Text(model.t("Bàn phím:", "Keyboard:"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Picker("", selection: Binding(
+                get: { model.config.device?.description ?? "" },
+                set: { key in
+                    if let choice = model.deviceChoices.first(where: { $0.id == key }) {
+                        model.selectDevice(choice.device)
+                    }
+                }
+            )) {
+                ForEach(model.deviceChoices) { choice in
+                    Text(choice.label).tag(choice.id)
+                }
+            }
+            .labelsHidden()
+            .frame(width: 300)
+
+            Text(model.t("Layout:", "Layout:"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Picker("", selection: Binding(
+                get: { model.layoutID },
+                set: { model.setLayout($0) }
+            )) {
+                ForEach(LayoutID.allCases) { id in
+                    Text(id.shortName).tag(id)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(width: 170)
+
+            if model.availableDevices.isEmpty {
+                Text(model.t("chưa cắm bàn phím", "no keyboard connected"))
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+
+            Spacer()
+
+            Button {
+                model.refreshDevices()
+            } label: {
+                Image(systemName: "arrow.clockwise")
+            }
+            .buttonStyle(.borderless)
+            .help(model.t("Dò lại bàn phím đang cắm", "Rescan connected keyboards"))
         }
     }
 
@@ -152,7 +209,7 @@ struct InspectorView: View {
                     }
                     .padding(.trailing, 2)
                 }
-                .frame(height: 132)
+                .frame(height: 120)
             } else if let key = selected {
                 HStack {
                     Text(model.t("Phím \(key.label) do firmware giữ, không remap được.",
@@ -179,21 +236,8 @@ struct InspectorView: View {
         return InspectorView.pickable.filter { $0.lowercased().contains(needle) }
     }
 
-    static let pickable: [String] = [
-        "Grave", "Escape", "Tab", "CapsLock", "Space", "Return",
-        "Delete", "ForwardDelete", "Home", "End", "PageUp", "PageDown",
-        "LeftArrow", "RightArrow", "UpArrow", "DownArrow", "Insert",
-        "LeftControl", "RightControl", "LeftShift", "RightShift",
-        "LeftAlt", "RightAlt", "LeftGUI", "RightGUI",
-        "Minus", "Equal", "LeftBracket", "RightBracket", "Backslash",
-        "Semicolon", "Quote", "Comma", "Period", "Slash",
-        "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12",
-        "Application", "PrintScreen", "ScrollLock", "Pause", "Insert",
-        "1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
-        "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P",
-        "A", "S", "D", "F", "G", "H", "J", "K", "L",
-        "Z", "X", "C", "V", "B", "N", "M",
-    ]
+    /// Every key the mapping engine understands, including numpad and F13–F20.
+    static var pickable: [String] { KeyCodes.allNames }
 }
 
 /// Menu bar apps don't get a window for free, and SwiftUI's `Window` scene
@@ -207,7 +251,7 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
     func show(model: AppModel) {
         if window == nil {
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 960, height: 540),
+                contentRect: NSRect(x: 0, y: 0, width: 980, height: 700),
                 styleMask: [.titled, .closable, .miniaturizable],
                 backing: .buffered,
                 defer: false

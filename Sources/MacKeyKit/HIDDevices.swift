@@ -60,9 +60,25 @@ public enum HIDDevices {
         all().filter(\.isKeyboard)
     }
 
-    /// Collapses the per-service entries into one row per physical device.
+    /// External keyboards only: drops the built-in Apple keyboard, pointer
+    /// devices that expose a stray keyboard collection (gaming mice), and
+    /// deduplicates the many HID services one board publishes.
     public static func uniqueKeyboards() -> [HIDDevice] {
-        var seen = Set<DeviceID>()
-        return keyboards().filter { seen.insert($0.id).inserted }
+        let grouped = Dictionary(grouping: all(), by: \.id)
+        var result: [HIDDevice] = []
+
+        for entries in grouped.values {
+            guard let first = entries.first,
+                  entries.contains(where: \.isKeyboard) else { continue }
+
+            let isInternal = first.vendorID == 0x05AC
+                && first.product.localizedCaseInsensitiveContains("internal")
+            let isPointer = entries.contains { $0.usagePage == 0x01 && $0.usage == 0x02 }
+            guard !isInternal, !isPointer else { continue }
+
+            result.append(first)
+        }
+
+        return result.sorted { ($0.label, $0.id.description) < ($1.label, $1.id.description) }
     }
 }
