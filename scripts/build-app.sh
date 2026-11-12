@@ -36,13 +36,15 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleExecutable</key>      <string>MacKey68</string>
     <key>CFBundlePackageType</key>     <string>APPL</string>
     <key>CFBundleIconFile</key>        <string>AppIcon</string>
-    <key>CFBundleShortVersionString</key> <string>0.6.0</string>
-    <key>CFBundleVersion</key>         <string>600</string>
+    <key>CFBundleShortVersionString</key> <string>0.7.0</string>
+    <key>CFBundleVersion</key>         <string>700</string>
     <key>NSHumanReadableCopyright</key>
     <string>Copyright © 2026 Vu Thanh Dat. Independent project; not affiliated with keyboard vendors. GPL-3.0-or-later.</string>
     <key>LSMinimumSystemVersion</key>  <string>13.0</string>
     <key>LSUIElement</key>             <true/>
     <key>NSHighResolutionCapable</key> <true/>
+    <key>NSInputMonitoringUsageDescription</key>
+    <string>MacKey68 reads key presses only when you open Keyboard Lab or run `mackey watch`.</string>
     <key>SUFeedURL</key>
     <string>https://github.com/thdat-vu/MacKey68/releases/latest/download/appcast.xml</string>
     <key>SUPublicEDKey</key>

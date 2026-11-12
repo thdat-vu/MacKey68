@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0
+
+- Keyboard Lab: press a real key to select it on the board.
+- Live HID tester with key name, usage code and timing.
+- Chatter detection (two key-downs within 50 ms).
+- Input Monitoring permission card with a direct shortcut to System Settings.
+- `mackey68://lab` and `--lab` open the lab directly.
+
 ## 0.6.0
 
 - Rename, duplicate, delete and set a default profile.

@@ -8,7 +8,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let launchedByAgent = ProcessInfo.processInfo.environment["MACKEY_AGENT"] == "1"
             || CommandLine.arguments.contains("--agent")
         let wantsBoard = CommandLine.arguments.contains("--board")
-        let showsBoard = wantsBoard || !launchedByAgent
+        let wantsLab = CommandLine.arguments.contains("--lab")
+        let showsBoard = wantsBoard || wantsLab || !launchedByAgent
 
         // Không có icon trên Dock khi chỉ chạy nền; khi mở cửa sổ thì thành app thường
         // để macOS cho phép đưa cửa sổ ra trước.
@@ -23,6 +24,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if showsBoard {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                 BoardWindowController.shared.show(model: AppModel.shared)
+            }
+            if wantsLab {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    AppModel.shared.isShowingLab = true
+                }
             }
             // Lần hai sau khi app đã ổn định: macOS hay trì hoãn việc activate app mới.
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
@@ -47,6 +53,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if link.host?.lowercased() == "import" {
             importProfile(from: link)
+            return
+        }
+
+        if link.host?.lowercased() == "lab" {
+            let model = AppModel.shared
+            BoardWindowController.shared.show(model: model)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                model.isShowingLab = true
+            }
             return
         }
 

@@ -57,6 +57,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var language: Language
     /// Popup hướng dẫn.
     @Published var isShowingGuide = false
+    /// Keyboard Lab (key tester / select by pressing).
+    @Published var isShowingLab = false
 
     /// Bật/tắt toàn bộ remap.
     @Published var enabled: Bool = true {
@@ -539,6 +541,17 @@ final class AppModel: ObservableObject {
     /// Key nào trên bàn phím đang gửi usage gì.
     func destination(for key: LayoutKey) -> UInt32? {
         activeProfile.destination(for: key.usage)
+    }
+
+    /// Keyboard Lab sees the usage after hidutil on some systems; map it back to
+    /// the physical key so "press to select" still highlights the right cap.
+    func sourceUsage(forReportedUsage usage: UInt32) -> UInt32 {
+        for mapping in activeProfile.mappings {
+            guard KeyCodes.code(for: mapping.to) == usage,
+                  let source = KeyCodes.code(for: mapping.from) else { continue }
+            return source
+        }
+        return usage
     }
 
     func setMapping(source: UInt32, to destination: UInt32?) {

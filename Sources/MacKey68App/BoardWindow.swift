@@ -6,6 +6,7 @@ import MacKeyKit
 
 struct BoardWindow: View {
     @EnvironmentObject private var model: AppModel
+    @StateObject private var lab = KeyLab()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -19,6 +20,15 @@ struct BoardWindow: View {
         .padding(18)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(nsColor: .windowBackgroundColor))
+        .sheet(isPresented: $model.isShowingLab) {
+            KeyboardLabView(lab: lab) { usage in
+                let source = model.sourceUsage(forReportedUsage: usage)
+                guard let key = model.layout.key(usage: source) else { return false }
+                model.selectedKey = key
+                return true
+            }
+            .environmentObject(model)
+        }
         .sheet(isPresented: $model.isShowingGuide, onDismiss: {
             model.markGuideSeen()
         }) {
@@ -52,6 +62,15 @@ struct BoardWindow: View {
 
             profileMenu
             shareMenu
+
+            Button {
+                model.isShowingLab = true
+            } label: {
+                Image(systemName: "waveform.path.ecg")
+            }
+            .buttonStyle(.borderless)
+            .help(model.t("Keyboard Lab: test phím, phát hiện chatter",
+                          "Keyboard Lab: key tester and chatter detection"))
 
             Button {
                 model.openGuide()
