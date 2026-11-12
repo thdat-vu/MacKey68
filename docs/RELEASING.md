@@ -94,8 +94,8 @@ Quy trình release:
 git add -A
 git commit -m "Release 0.5.0"
 git push
-git tag -a v0.8.0 -m "MacKey68 0.8.0"
-git push origin v0.8.0
+git tag -a v0.9.0 -m "MacKey68 0.9.0"
+git push origin v0.9.0
 ```
 
 Workflow kiểm tra tag khớp `CFBundleShortVersionString` trước khi phát hành.

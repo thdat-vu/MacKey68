@@ -9,7 +9,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             || CommandLine.arguments.contains("--agent")
         let wantsBoard = CommandLine.arguments.contains("--board")
         let wantsLab = CommandLine.arguments.contains("--lab")
-        let showsBoard = wantsBoard || wantsLab || !launchedByAgent
+        let wantsLayers = CommandLine.arguments.contains("--layers")
+        let wantsLayersOn = CommandLine.arguments.contains("--layers-on")
+        let showsBoard = wantsBoard || wantsLab || wantsLayers || wantsLayersOn || !launchedByAgent
 
         // Không có icon trên Dock khi chỉ chạy nền; khi mở cửa sổ thì thành app thường
         // để macOS cho phép đưa cửa sổ ra trước.
@@ -28,6 +30,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if wantsLab {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                     AppModel.shared.isShowingLab = true
+                }
+            }
+            if wantsLayers {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    AppModel.shared.isShowingLayers = true
+                }
+            }
+            if wantsLayersOn {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    AppModel.shared.setLayersEnabled(true)
+                    AppModel.shared.isShowingLayers = true
                 }
             }
             // Lần hai sau khi app đã ổn định: macOS hay trì hoãn việc activate app mới.
@@ -53,6 +66,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if link.host?.lowercased() == "import" {
             importProfile(from: link)
+            return
+        }
+
+        if link.host?.lowercased() == "layers-off" {
+            AppModel.shared.setLayersEnabled(false)
+            return
+        }
+
+        if link.host?.lowercased() == "layers" {
+            let model = AppModel.shared
+            BoardWindowController.shared.show(model: model)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                model.isShowingLayers = true
+            }
             return
         }
 
@@ -167,6 +194,12 @@ struct MenuContent: View {
             BoardWindowController.shared.show(model: model)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 model.isShowingLab = true
+            }
+        }
+        Button(model.t("Layer (beta)…", "Layers (beta)…")) {
+            BoardWindowController.shared.show(model: model)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                model.isShowingLayers = true
             }
         }
         Button(model.t("Hướng dẫn…", "Guide…")) {

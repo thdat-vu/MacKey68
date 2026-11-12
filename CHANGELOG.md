@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.0
+
+- Layers (beta): hold Caps Lock for Vim-style navigation.
+- Event-tap engine with an emergency off switch and default-off config.
+- Accessibility permission card with copy-path and System Settings shortcuts.
+- `mackey68://layers` and `mackey68://layers-off` shortcuts.
+- hidutil trigger remap pauses only while the tap is actually running.
+
 ## 0.8.0
 
 - Renamed Keyboard Lab to **Key Test** / **Test phím**.

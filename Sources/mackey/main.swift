@@ -511,6 +511,14 @@ func runSelftest() -> Never {
     check(Layouts.layout(for: .tkl).keys.contains { $0.usage == 0x4B },
           "TKL has PageUp")
 
+    print("Mac keycodes")
+    check(MacKeyCodes.code(for: "I") == 0x22, "I -> 0x22")
+    check(MacKeyCodes.code(for: "CapsLock") == 0x39, "CapsLock -> 0x39")
+    check(MacKeyCodes.code(for: "UpArrow") == 0x7E, "UpArrow -> 0x7E")
+    check(MacKeyCodes.code(for: "Backspace") == 0x33, "Backspace -> 0x33")
+    check(MacKeyCodes.name(for: 0x7E) == "UpArrow", "0x7E -> UpArrow")
+    check(MacKeyCodes.name(for: 0x33) == "Delete", "0x33 -> Delete")
+
     print("")
     if failures == 0 {
         print("Tất cả ok.")

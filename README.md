@@ -95,6 +95,19 @@ managed, and the drawn board adapts to one of three layouts:
 Profiles carry their `autoFor` app rules, so a shared League profile keeps its automatic
 switching.
 
+## Layers (beta)
+
+Hold **Caps Lock** to turn `IJKL` into arrow keys, `U/O` into Home/End, `Y/N` into
+Page Up/Page Down, `H` into Backspace and `M` into Return. It is **off by default**.
+
+- Enable from the menu bar → **Layers (beta)…** or `open "mackey68://layers"`.
+- Layers use an event tap and need **Accessibility** permission (not Input Monitoring).
+- While enabled, Caps Lock no longer types capitals and its hidutil remap is paused.
+- Emergency off: menu bar → Layers → **Turn layers off**, or
+  `open "mackey68://layers-off"`.
+- The default layer lives in `layers` in the config; edit the JSON to change trigger or
+  mappings.
+
 ## Three ways to get a Mac layout
 
 **1. Hardware Mac mode (try this first, 5 seconds).**
@@ -209,7 +222,7 @@ rm -rf ~/Applications/MacKey68.app
 ./scripts/package-dmg.sh
 ```
 
-Creates `dist/MacKey68-0.8.0.dmg` with the app and an Applications shortcut to drag it
+Creates `dist/MacKey68-0.9.0.dmg` with the app and an Applications shortcut to drag it
 onto. The app registers itself as a login item on first launch, so users don't need
 Terminal.
 
@@ -226,9 +239,9 @@ To sign with Developer ID (paid Apple Developer account):
 ```bash
 MACKEY_SIGN_IDENTITY="Developer ID Application: Name (TEAMID)" ./scripts/package-dmg.sh
 # then notarize:
-xcrun notarytool submit dist/MacKey68-0.8.0.dmg \
+xcrun notarytool submit dist/MacKey68-0.9.0.dmg \
   --apple-id you@example.com --team-id TEAMID --password "$APP_PASSWORD" --wait
-xcrun stapler staple dist/MacKey68-0.8.0.dmg
+xcrun stapler staple dist/MacKey68-0.9.0.dmg
 ```
 
 The app icon is drawn in code; no source image is needed:
@@ -311,6 +324,8 @@ really sends.
 - `autoFor`: bundle ids that auto-activate the profile. Matched **exactly or by
   prefix**, so `com.riotgames.` matches every Riot bundle. A profile with an empty
   `autoFor` is the fallback when nothing matches.
+- `layers` / `layersEnabled`: hold-to-activate layers. Each layer has a `trigger`, an
+  `enabled` flag and `mappings`; the master switch defaults to off.
 - The older `mappings`-only format still loads and is upgraded to a `default` profile.
 - The app rewrites this config whenever you change a key, a layout or link an app;
   after editing by hand, reopen the app (or click **Reapply** in the menu).
@@ -343,6 +358,10 @@ Key names accept common spellings: `Cmd`, `Command`, `Win`, `Opt`, `Option`, `Al
 Security → Input Monitoring, click **+**, press ⌘⇧G and paste the app path (the Lab has a
 **Copy app path** button). Then turn MacKey68 on and press Retry. Ad-hoc builds may need
 this again after an update; Developer ID signing keeps the permission stable.
+
+**Layers says Accessibility denied.** Open System Settings → Privacy & Security →
+Accessibility, click **+**, paste the app path (button in Layers copies it), then enable
+MacKey68 and press Retry. This permission is separate from Input Monitoring.
 
 **The app is not in /Applications.** `./scripts/install-app.sh` installs to
 `~/Applications/MacKey68.app`; Sparkle updates it there in place. The DMG installs to
@@ -519,6 +538,18 @@ bàn phím vẽ ra tự đổi theo một trong ba layout:
 Profile mang theo rule `autoFor`, nên profile League được chia sẻ vẫn tự chuyển khi mở
 game.
 
+## Layer (beta)
+
+Giữ **Caps Lock** để biến `IJKL` thành mũi tên, `U/O` thành Home/End, `Y/N` thành
+Page Up/Page Down, `H` thành Backspace và `M` thành Return. Mặc định **tắt**.
+
+- Bật từ menu bar → **Layer (beta)…** hoặc `open "mackey68://layers"`.
+- Layer dùng event tap nên cần quyền **Accessibility** (không phải Input Monitoring).
+- Khi bật, Caps Lock không còn gõ chữ hoa và mapping hidutil của Caps tạm dừng.
+- Tắt khẩn cấp: menu bar → Layers → **Tắt layer**, hoặc
+  `open "mackey68://layers-off"`.
+- Layer mặc định nằm trong `layers` của config; sửa JSON để đổi trigger hoặc mapping.
+
 ## Ba tầng để "ra layout Mac"
 
 **1. Chế độ Mac phần cứng (thử trước, 5 giây).**
@@ -634,7 +665,7 @@ rm -rf ~/Applications/MacKey68.app
 ./scripts/package-dmg.sh
 ```
 
-Tạo `dist/MacKey68-0.8.0.dmg`: mở ra có app và lối tắt Applications để kéo vào. App tự
+Tạo `dist/MacKey68-0.9.0.dmg`: mở ra có app và lối tắt Applications để kéo vào. App tự
 đăng ký chạy khi đăng nhập ở lần mở đầu tiên, nên người dùng không cần Terminal.
 
 Về Gatekeeper, có ba mức:
@@ -650,9 +681,9 @@ Về Gatekeeper, có ba mức:
 ```bash
 MACKEY_SIGN_IDENTITY="Developer ID Application: Tên (TEAMID)" ./scripts/package-dmg.sh
 # sau đó notarize:
-xcrun notarytool submit dist/MacKey68-0.8.0.dmg \
+xcrun notarytool submit dist/MacKey68-0.9.0.dmg \
   --apple-id you@example.com --team-id TEAMID --password "$APP_PASSWORD" --wait
-xcrun stapler staple dist/MacKey68-0.8.0.dmg
+xcrun stapler staple dist/MacKey68-0.9.0.dmg
 ```
 
 Icon app được vẽ bằng code, không cần file ảnh nguồn:
@@ -733,6 +764,8 @@ Input Monitoring → bật cho Terminal). Đây là công cụ để dò xem `Fn
 - `autoFor`: bundle id của app mà profile tự bật. So khớp **chính xác hoặc theo tiền
   tố**, nên `com.riotgames.` bắt mọi bundle của Riot. Profile có `autoFor` rỗng là
   profile mặc định khi không app nào khớp.
+- `layers` / `layersEnabled`: layer giữ phím. Mỗi layer có `trigger`, `enabled` và
+  `mappings`; công tắc tổng mặc định tắt.
 - Dạng cũ chỉ có `mappings` vẫn đọc được và được nâng thành một profile `default`.
 - App ghi config này mỗi khi bạn đổi phím, đổi layout hoặc gắn app, nên sửa tay xong chỉ
   cần mở lại app (hoặc bấm **Áp dụng lại** trên menu).
@@ -764,6 +797,10 @@ Tên phím chấp nhận cả cách viết thường dùng: `Cmd`, `Command`, `W
 Input Monitoring, bấm **+**, nhấn ⌘⇧G rồi dán đường dẫn app (nút **Sao chép đường dẫn
 app** trong Lab). Bật MacKey68 rồi bấm Thử lại. Bản ad-hoc có thể phải làm lại sau mỗi
 lần update; ký Developer ID sẽ giữ quyền ổn định.
+
+**Layer báo thiếu Accessibility.** Mở System Settings → Privacy & Security →
+Accessibility, bấm **+**, dán đường dẫn app (nút trong Layer copy giúp), bật MacKey68
+rồi bấm Thử lại. Quyền này tách biệt với Input Monitoring.
 
 **Không thấy app trong /Applications.** `./scripts/install-app.sh` cài vào
 `~/Applications/MacKey68.app`; Sparkle update tại chỗ. Bản DMG sẽ nằm ở `/Applications`

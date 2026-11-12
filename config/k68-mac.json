@@ -1,16 +1,25 @@
 {
   "name": "MacKey68",
-  "device": { "vendorID": 3141, "productID": 30276 },
+  "device": {
+    "vendorID": 3141,
+    "productID": 30276
+  },
   "activeModel": "SONiX USB DEVICE",
   "devices": [
     {
-      "device": { "vendorID": 39658, "productID": 4137 },
+      "device": {
+        "vendorID": 39658,
+        "productID": 4137
+      },
       "name": "Ziyoulang K68",
       "layout": "68",
       "enabled": true
     },
     {
-      "device": { "vendorID": 3141, "productID": 30276 },
+      "device": {
+        "vendorID": 3141,
+        "productID": 30276
+      },
       "model": "SONiX USB DEVICE",
       "name": "Edra EK387 Pro",
       "layout": "tkl",
@@ -23,16 +32,78 @@
       "name": "macOS",
       "autoFor": [],
       "mappings": [
-        { "from": "LeftAlt", "to": "LeftGUI" },
-        { "from": "LeftGUI", "to": "LeftAlt" }
+        {
+          "from": "LeftAlt",
+          "to": "LeftGUI"
+        },
+        {
+          "from": "LeftGUI",
+          "to": "LeftAlt"
+        }
       ]
     },
     {
       "id": "league",
       "name": "League of Legends",
-      "autoFor": ["com.riotgames."],
+      "autoFor": [
+        "com.riotgames."
+      ],
       "mappings": [
-        { "from": "CapsLock", "to": "Grave" }
+        {
+          "from": "CapsLock",
+          "to": "Grave"
+        }
+      ]
+    }
+  ],
+  "layersEnabled": false,
+  "layers": [
+    {
+      "id": "vim",
+      "name": "Caps = Vim navigation",
+      "trigger": "CapsLock",
+      "enabled": true,
+      "mappings": [
+        {
+          "from": "I",
+          "to": "UpArrow"
+        },
+        {
+          "from": "J",
+          "to": "LeftArrow"
+        },
+        {
+          "from": "K",
+          "to": "DownArrow"
+        },
+        {
+          "from": "L",
+          "to": "RightArrow"
+        },
+        {
+          "from": "U",
+          "to": "Home"
+        },
+        {
+          "from": "O",
+          "to": "End"
+        },
+        {
+          "from": "Y",
+          "to": "PageUp"
+        },
+        {
+          "from": "N",
+          "to": "PageDown"
+        },
+        {
+          "from": "H",
+          "to": "Backspace"
+        },
+        {
+          "from": "M",
+          "to": "Return"
+        }
       ]
     }
   ]

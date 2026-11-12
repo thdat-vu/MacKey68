@@ -95,6 +95,9 @@ struct GuideView: View {
                     ("questionmark.circle",
                      model.t("Mở lại hướng dẫn này bất cứ lúc nào từ menu bar → Hướng dẫn…",
                              "Reopen this guide anytime from the menu bar → Guide…")),
+                    ("square.3.layers.3d",
+                     model.t("Layer (beta): giữ Caps để dùng IJKL thành mũi tên; cần quyền Accessibility.",
+                             "Layers (beta): hold Caps for IJKL arrows; needs Accessibility permission.")),
                 ]
             ),
         ]

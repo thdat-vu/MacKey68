@@ -93,6 +93,49 @@ public struct DeviceConfig: Codable, Equatable, Identifiable {
     }
 }
 
+/// A hold-to-activate layer handled by the event tap (not hidutil).
+public struct Layer: Codable, Identifiable, Equatable {
+    public var id: String
+    public var name: String
+    /// Physical key held down to activate the layer, e.g. "CapsLock".
+    public var trigger: String
+    public var enabled: Bool
+    public var mappings: [KeyMapping]
+
+    public init(id: String,
+                name: String,
+                trigger: String,
+                enabled: Bool = true,
+                mappings: [KeyMapping]) {
+        self.id = id
+        self.name = name
+        self.trigger = trigger
+        self.enabled = enabled
+        self.mappings = mappings
+    }
+
+    public static var vimNavigation: Layer {
+        Layer(
+            id: "vim",
+            name: "Caps = Vim navigation",
+            trigger: "CapsLock",
+            enabled: true,
+            mappings: [
+                KeyMapping(from: "I", to: "UpArrow"),
+                KeyMapping(from: "J", to: "LeftArrow"),
+                KeyMapping(from: "K", to: "DownArrow"),
+                KeyMapping(from: "L", to: "RightArrow"),
+                KeyMapping(from: "U", to: "Home"),
+                KeyMapping(from: "O", to: "End"),
+                KeyMapping(from: "Y", to: "PageUp"),
+                KeyMapping(from: "N", to: "PageDown"),
+                KeyMapping(from: "H", to: "Backspace"),
+                KeyMapping(from: "M", to: "Return"),
+            ]
+        )
+    }
+}
+
 public struct KeymapConfig: Codable {
     public var name: String?
     /// Keyboard used by the CLI when no --device is given, and the one shown first.
@@ -104,6 +147,10 @@ public struct KeymapConfig: Codable {
     public var defaultProfileID: String?
     /// Every keyboard the app manages, with its own drawn layout.
     public var devices: [DeviceConfig]?
+    /// Hold-to-activate layers (event tap). Optional for old configs.
+    public var layers: [Layer]?
+    /// Master switch for the event-tap layers.
+    public var layersEnabled: Bool?
     /// Dạng cũ (một bộ mapping duy nhất). Vẫn đọc được.
     public var mappings: [KeyMapping]?
     /// Nhiều bộ mapping, có thể gắn với app để tự chuyển.
@@ -114,6 +161,8 @@ public struct KeymapConfig: Codable {
                 activeModel: String? = nil,
                 defaultProfileID: String? = nil,
                 devices: [DeviceConfig]? = nil,
+                layers: [Layer]? = nil,
+                layersEnabled: Bool? = nil,
                 mappings: [KeyMapping]? = nil,
                 profiles: [Profile]? = nil) {
         self.name = name
@@ -121,6 +170,8 @@ public struct KeymapConfig: Codable {
         self.activeModel = activeModel
         self.defaultProfileID = defaultProfileID
         self.devices = devices
+        self.layers = layers
+        self.layersEnabled = layersEnabled
         self.mappings = mappings
         self.profiles = profiles
     }

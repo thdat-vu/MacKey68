@@ -59,6 +59,10 @@ final class AppModel: ObservableObject {
     @Published var isShowingGuide = false
     /// Keyboard Lab (key tester / select by pressing).
     @Published var isShowingLab = false
+    /// Layers beta sheet.
+    @Published var isShowingLayers = false
+    /// Event-tap status for layers.
+    @Published private(set) var layerStatus: LayerEngine.Status = .off
     /// Keys the user has pressed while testing the current layout.
     @Published private(set) var testedUsages: Set<UInt32> = []
 
@@ -78,6 +82,7 @@ final class AppModel: ObservableObject {
     private var workspaceObserver: NSObjectProtocol?
     private var watcher: DeviceWatcher?
     private var pendingDeviceSync: Task<Void, Never>?
+    private let layerEngine = LayerEngine()
     private var ready = false
 
     init() {
@@ -92,6 +97,12 @@ final class AppModel: ObservableObject {
         if config.profiles == nil || config.profiles?.isEmpty == true {
             config.profiles = config.allProfiles
             config.mappings = nil
+        }
+        if config.layers == nil {
+            config.layers = [Layer.vimNavigation]
+        }
+        if config.layersEnabled == nil {
+            config.layersEnabled = false
         }
         Self.migrateDevices(&config, detected: detected)
 
@@ -117,6 +128,10 @@ final class AppModel: ObservableObject {
         ready = true
         persist()
         apply()
+        if config.layersEnabled == true {
+            rebuildLayerEngine()
+            apply()
+        }
         noteForeign(NSWorkspace.shared.frontmostApplication)
         observeFrontmostApp()
         startWatchingDevices()
@@ -325,6 +340,7 @@ final class AppModel: ObservableObject {
         activeProfileID = preset.id
         persist()
         apply()
+        rebuildLayerEngine()
     }
 
     // MARK: - Profile management
@@ -361,6 +377,7 @@ final class AppModel: ObservableObject {
         activeProfileID = copy.id
         persist()
         apply()
+        rebuildLayerEngine()
     }
 
     func deleteProfile(id: String) {
@@ -381,6 +398,7 @@ final class AppModel: ObservableObject {
         }
         persist()
         apply()
+        rebuildLayerEngine()
     }
 
     func setDefaultProfile(id: String) {
@@ -393,9 +411,59 @@ final class AppModel: ObservableObject {
         config.fallbackProfile.id == id
     }
 
+    // MARK: - Layers
+
+    var layers: [Layer] { config.layers ?? [] }
+    var layersEnabled: Bool { config.layersEnabled == true }
+
+    func setLayersEnabled(_ enabled: Bool) {
+        config.layersEnabled = enabled
+        persist()
+        rebuildLayerEngine()
+        apply()
+    }
+
+    func retryLayers() {
+        layerEngine.stop()
+        layerStatus = .off
+        rebuildLayerEngine()
+        apply()
+    }
+
+    func setLayerEnabled(id: String, enabled: Bool) {
+        guard let index = config.layers?.firstIndex(where: { $0.id == id }) else { return }
+        config.layers?[index].enabled = enabled
+        persist()
+        apply()
+        rebuildLayerEngine()
+    }
+
+    private var layerTriggerUsages: Set<UInt32> {
+        Set(layers.filter(\.enabled).compactMap { KeyCodes.code(for: $0.trigger) })
+    }
+
+    private func rebuildLayerEngine() {
+        guard ready else { return }
+        guard config.layersEnabled == true else {
+            layerEngine.stop()
+            layerStatus = .off
+            return
+        }
+
+        let rules = LayerRules.build(layers: layers.filter(\.enabled),
+                                     profile: activeProfile)
+        if layerEngine.status == .off {
+            layerStatus = layerEngine.start(rules: rules)
+        } else {
+            layerEngine.update(rules: rules)
+            layerStatus = layerEngine.status
+        }
+    }
+
     func selectProfile(_ id: String) {
         activeProfileID = id
         apply()
+        rebuildLayerEngine()
     }
 
     /// Bundle id của app đang phía trước → đổi profile tương ứng.
@@ -405,6 +473,7 @@ final class AppModel: ObservableObject {
         guard match.id != activeProfileID else { return }
         activeProfileID = match.id
         apply()
+        rebuildLayerEngine()
     }
 
     private func noteForeign(_ app: NSRunningApplication?) {
@@ -595,6 +664,7 @@ final class AppModel: ObservableObject {
         config.profiles?[index].mappings = mappings
         persist()
         apply()
+        rebuildLayerEngine()
     }
 
     func apply() {
@@ -621,7 +691,16 @@ final class AppModel: ObservableObject {
         }
 
         do {
-            let resolved = try KeymapResolver.resolve(activeProfile.mappings)
+            var profileMappings = activeProfile.mappings
+            if layerStatus == .running {
+                // The event tap must see the raw trigger key (e.g. Caps), so
+                // pause its hidutil remap only while the tap is really active.
+                let triggers = layerTriggerUsages
+                profileMappings.removeAll { mapping in
+                    KeyCodes.code(for: mapping.from).map(triggers.contains) == true
+                }
+            }
+            let resolved = try KeymapResolver.resolve(profileMappings)
             if enabled {
                 for target in targets {
                     _ = try HIDUtil.apply(resolved, matching: target)
@@ -785,6 +864,8 @@ final class AppModel: ObservableObject {
             activeModel: active?.model,
             defaultProfileID: "mac",
             devices: devices,
+            layers: [Layer.vimNavigation],
+            layersEnabled: false,
             mappings: nil,
             profiles: [
                 Profile(

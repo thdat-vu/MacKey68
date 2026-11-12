@@ -20,6 +20,10 @@ struct BoardWindow: View {
         .padding(18)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(nsColor: .windowBackgroundColor))
+        .sheet(isPresented: $model.isShowingLayers) {
+            LayersView()
+                .environmentObject(model)
+        }
         .sheet(isPresented: $model.isShowingLab) {
             KeyboardLabView(lab: lab) { usage in
                 let source = model.sourceUsage(forReportedUsage: usage)
@@ -117,6 +121,12 @@ struct BoardWindow: View {
                 deleteProfile()
             }
             .disabled(!model.canDeleteProfile)
+
+            Divider()
+
+            Button(model.t("Layer (beta)…", "Layers (beta)…")) {
+                model.isShowingLayers = true
+            }
         } label: {
             Image(systemName: "ellipsis.circle")
         }
