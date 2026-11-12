@@ -23,8 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Allow SwiftPM to fetch dependencies
-        run: git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+      - name: Configure git credentials for SwiftPM
+        run: gh auth setup-git
 
       - name: Import Developer ID certificate
         if: env.MACKEY_SIGN_IDENTITY != ''
