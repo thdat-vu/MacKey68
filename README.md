@@ -64,6 +64,11 @@ managed, and the drawn board adapts to one of three layouts:
   added automatically with the detected layout and start receiving mappings. The
   built-in Apple keyboard and gaming mice that expose a stray keyboard collection are
   ignored.
+- Layout is remembered per **VID:PID + model name**, so two different boards that share
+  a chip (common with SONiX `0x0C45`) keep separate layouts.
+- Built-in detection covers common retail boards: Keychron, Akko, FL-Esports, Royal
+  Kludge, Logitech G915/G913, Razer Huntsman/BlackWidow, Corsair K65/K70/K95 and GMMK 2.
+  Unknown boards fall back to TKL; change the Layout picker once and it is remembered.
 - Open the keyboard window and use the **Keyboard** picker to switch boards; the
   **Layout** picker (68 / TKL / Full) changes the drawing. The choice is saved per
   device.
@@ -174,7 +179,7 @@ rm -rf ~/Applications/MacKey68.app
 ./scripts/package-dmg.sh
 ```
 
-Creates `dist/MacKey68-0.3.0.dmg` with the app and an Applications shortcut to drag it
+Creates `dist/MacKey68-0.4.0.dmg` with the app and an Applications shortcut to drag it
 onto. The app registers itself as a login item on first launch, so users don't need
 Terminal.
 
@@ -191,9 +196,9 @@ To sign with Developer ID (paid Apple Developer account):
 ```bash
 MACKEY_SIGN_IDENTITY="Developer ID Application: Name (TEAMID)" ./scripts/package-dmg.sh
 # then notarize:
-xcrun notarytool submit dist/MacKey68-0.3.0.dmg \
+xcrun notarytool submit dist/MacKey68-0.4.0.dmg \
   --apple-id you@example.com --team-id TEAMID --password "$APP_PASSWORD" --wait
-xcrun stapler staple dist/MacKey68-0.3.0.dmg
+xcrun stapler staple dist/MacKey68-0.4.0.dmg
 ```
 
 The app icon is drawn in code; no source image is needed:
@@ -229,7 +234,8 @@ really sends.
 ```json
 {
   "name": "MacKey68",
-  "device": { "vendorID": 39658, "productID": 4137 },
+  "device": { "vendorID": 3141, "productID": 30276 },
+  "activeModel": "SONiX USB DEVICE",
   "devices": [
     {
       "device": { "vendorID": 39658, "productID": 4137 },
@@ -239,7 +245,8 @@ really sends.
     },
     {
       "device": { "vendorID": 3141, "productID": 30276 },
-      "name": "Edra EK387 Pro (SONiX)",
+      "model": "SONiX USB DEVICE",
+      "name": "Edra EK387 Pro",
       "layout": "tkl",
       "enabled": true
     }
@@ -267,7 +274,9 @@ really sends.
 ```
 
 - `devices`: every managed keyboard. `layout` is `68`, `tkl` or `full`; `enabled`
-  controls whether it receives mappings. `device` (top level) is just the keyboard
+  controls whether it receives mappings. `model` is the HID product string (or
+  manufacturer + product when the name is generic), so two boards with the same VID:PID
+  keep separate layouts. `device` + `activeModel` (top level) identify the keyboard
   selected in the UI / used by the CLI by default.
 - `autoFor`: bundle ids that auto-activate the profile. Matched **exactly or by
   prefix**, so `com.riotgames.` matches every Riot bundle. A profile with an empty
@@ -293,6 +302,8 @@ Key names accept common spellings: `Cmd`, `Command`, `Win`, `Opt`, `Option`, `Al
 - The `Fn` key itself can't be remapped (firmware owns it).
 - Drawn layouts are ANSI. ISO/JIS boards still work, but their Enter/left-Shift shapes
   aren't drawn; pick the closest layout.
+- 60%, 75% and 96% boards use the closest drawing (68 or TKL). Their mappings still work
+  — only the picture has a few extra/missing caps.
 
 ### If you need more
 
@@ -423,6 +434,11 @@ bàn phím vẽ ra tự đổi theo một trong ba layout:
 - App dò bàn phím ngoài khi khởi động và mỗi lần cắm/rút. Bàn phím mới được tự thêm với
   layout nhận diện và nhận mapping ngay. Bàn phím built-in của Apple và chuột chơi game
   có khai báo thêm keyboard collection sẽ bị bỏ qua.
+- Layout được nhớ theo **VID:PID + tên model**, nên hai board khác nhau dùng chung chip
+  (hay gặp ở SONiX `0x0C45`) vẫn giữ layout riêng.
+- Bảng nhận diện có sẵn cho các hãng phổ biến: Keychron, Akko, FL-Esports, Royal Kludge,
+  Logitech G915/G913, Razer Huntsman/BlackWidow, Corsair K65/K70/K95 và GMMK 2. Board lạ
+  tạm đoán TKL; đổi ô Layout một lần là lần sau nhớ đúng.
 - Mở cửa sổ bàn phím, chọn bàn phím ở ô **Bàn phím**; ô **Layout** (68 / TKL / Full)
   đổi hình vẽ. Lựa chọn được lưu riêng cho từng thiết bị.
 - Mọi bàn phím đang bật đều nhận mapping của profile hiện tại, nên đổi bàn phím vẫn giữ
@@ -534,7 +550,7 @@ rm -rf ~/Applications/MacKey68.app
 ./scripts/package-dmg.sh
 ```
 
-Tạo `dist/MacKey68-0.3.0.dmg`: mở ra có app và lối tắt Applications để kéo vào. App tự
+Tạo `dist/MacKey68-0.4.0.dmg`: mở ra có app và lối tắt Applications để kéo vào. App tự
 đăng ký chạy khi đăng nhập ở lần mở đầu tiên, nên người dùng không cần Terminal.
 
 Về Gatekeeper, có ba mức:
@@ -550,9 +566,9 @@ Về Gatekeeper, có ba mức:
 ```bash
 MACKEY_SIGN_IDENTITY="Developer ID Application: Tên (TEAMID)" ./scripts/package-dmg.sh
 # sau đó notarize:
-xcrun notarytool submit dist/MacKey68-0.3.0.dmg \
+xcrun notarytool submit dist/MacKey68-0.4.0.dmg \
   --apple-id you@example.com --team-id TEAMID --password "$APP_PASSWORD" --wait
-xcrun stapler staple dist/MacKey68-0.3.0.dmg
+xcrun stapler staple dist/MacKey68-0.4.0.dmg
 ```
 
 Icon app được vẽ bằng code, không cần file ảnh nguồn:
@@ -587,7 +603,8 @@ Input Monitoring → bật cho Terminal). Đây là công cụ để dò xem `Fn
 ```json
 {
   "name": "MacKey68",
-  "device": { "vendorID": 39658, "productID": 4137 },
+  "device": { "vendorID": 3141, "productID": 30276 },
+  "activeModel": "SONiX USB DEVICE",
   "devices": [
     {
       "device": { "vendorID": 39658, "productID": 4137 },
@@ -597,7 +614,8 @@ Input Monitoring → bật cho Terminal). Đây là công cụ để dò xem `Fn
     },
     {
       "device": { "vendorID": 3141, "productID": 30276 },
-      "name": "Edra EK387 Pro (SONiX)",
+      "model": "SONiX USB DEVICE",
+      "name": "Edra EK387 Pro",
       "layout": "tkl",
       "enabled": true
     }
@@ -625,8 +643,9 @@ Input Monitoring → bật cho Terminal). Đây là công cụ để dò xem `Fn
 ```
 
 - `devices`: mọi bàn phím được quản lý. `layout` là `68`, `tkl` hoặc `full`; `enabled`
-  quyết định bàn phím đó có nhận mapping không. `device` ở ngoài cùng chỉ là bàn phím
-  đang chọn trong UI / dùng mặc định cho CLI.
+  quyết định bàn phím đó có nhận mapping không. `model` là tên HID product (hoặc hãng +
+  tên sản phẩm nếu tên quá chung), giúp hai board cùng VID:PID giữ layout riêng. `device` + `activeModel` ở ngoài cùng xác định
+  bàn phím đang chọn trong UI / dùng mặc định cho CLI.
 - `autoFor`: bundle id của app mà profile tự bật. So khớp **chính xác hoặc theo tiền
   tố**, nên `com.riotgames.` bắt mọi bundle của Riot. Profile có `autoFor` rỗng là
   profile mặc định khi không app nào khớp.
@@ -650,6 +669,8 @@ Tên phím chấp nhận cả cách viết thường dùng: `Cmd`, `Command`, `W
 - Không remap được phím `Fn` (firmware giữ nó).
 - Hình vẽ là layout ANSI. Bàn phím ISO/JIS vẫn dùng được nhưng phím Enter/Shift trái
   không vẽ đúng hình; chọn layout gần nhất.
+- Board 60%, 75% và 96% dùng hình gần nhất (68 hoặc TKL). Mapping vẫn đúng, chỉ hình vẽ
+  thừa/thiếu vài phím.
 
 ### Nếu cần nhiều hơn
 

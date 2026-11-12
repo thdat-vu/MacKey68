@@ -1,6 +1,7 @@
 {
   "name": "MacKey68",
-  "device": { "vendorID": 39658, "productID": 4137 },
+  "device": { "vendorID": 3141, "productID": 30276 },
+  "activeModel": "SONiX USB DEVICE",
   "devices": [
     {
       "device": { "vendorID": 39658, "productID": 4137 },
@@ -10,7 +11,8 @@
     },
     {
       "device": { "vendorID": 3141, "productID": 30276 },
-      "name": "Edra EK387 Pro (SONiX)",
+      "model": "SONiX USB DEVICE",
+      "name": "Edra EK387 Pro",
       "layout": "tkl",
       "enabled": true
     }

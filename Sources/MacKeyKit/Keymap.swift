@@ -50,25 +50,46 @@ public struct KeyMapping: Codable, Equatable {
 /// One managed keyboard: which board it is and which drawn layout to use.
 public struct DeviceConfig: Codable, Equatable, Identifiable {
     public var device: DeviceID
+    /// Product string reported by HID, e.g. "SONiX USB DEVICE".
+    /// Optional so configs written before multi-model support still load.
+    public var model: String?
     public var name: String
     /// LayoutID raw value: "68", "tkl" or "full".
     public var layout: String
     public var enabled: Bool
 
-    public var id: String { device.description }
+    public var id: String { "\(device.description)|\(model ?? "")" }
 
     public var layoutID: LayoutID {
         LayoutID(rawValue: layout.lowercased()) ?? .tkl
     }
 
     public init(device: DeviceID,
+                model: String? = nil,
                 name: String = "",
                 layout: String = LayoutID.tkl.rawValue,
                 enabled: Bool = true) {
         self.device = device
+        self.model = model
         self.name = name
         self.layout = layout
         self.enabled = enabled
+    }
+
+    /// Cùng VID:PID nhưng khác tên model (nhiều board dùng chip SONiX) vẫn là
+    /// hai bàn phím khác nhau. Entry cũ không có model thì khớp theo VID:PID.
+    public func matches(_ device: HIDDevice) -> Bool {
+        guard self.device.matches(device.id) else { return false }
+        guard let model, !model.isEmpty, !device.product.isEmpty else { return true }
+        return model.caseInsensitiveCompare(device.product) == .orderedSame
+            || model.caseInsensitiveCompare(device.label) == .orderedSame
+    }
+
+    public func matches(_ id: DeviceID, model: String? = nil) -> Bool {
+        guard device.matches(id) else { return false }
+        guard let model, !model.isEmpty else { return true }
+        guard let selfModel = self.model, !selfModel.isEmpty else { return true }
+        return selfModel.caseInsensitiveCompare(model) == .orderedSame
     }
 }
 
@@ -76,6 +97,9 @@ public struct KeymapConfig: Codable {
     public var name: String?
     /// Keyboard used by the CLI when no --device is given, and the one shown first.
     public var device: DeviceID?
+    /// Model (HID product string) of the selected keyboard, so two boards with
+    /// the same VID:PID can keep separate layouts.
+    public var activeModel: String?
     /// Every keyboard the app manages, with its own drawn layout.
     public var devices: [DeviceConfig]?
     /// Dạng cũ (một bộ mapping duy nhất). Vẫn đọc được.
@@ -85,11 +109,13 @@ public struct KeymapConfig: Codable {
 
     public init(name: String? = nil,
                 device: DeviceID? = nil,
+                activeModel: String? = nil,
                 devices: [DeviceConfig]? = nil,
                 mappings: [KeyMapping]? = nil,
                 profiles: [Profile]? = nil) {
         self.name = name
         self.device = device
+        self.activeModel = activeModel
         self.devices = devices
         self.mappings = mappings
         self.profiles = profiles
@@ -97,6 +123,19 @@ public struct KeymapConfig: Codable {
 
     public func deviceConfig(for device: DeviceID) -> DeviceConfig? {
         devices?.first { $0.device.matches(device) }
+    }
+
+    /// Exact model first, then a legacy entry without a model.
+    public func deviceConfig(for device: HIDDevice) -> DeviceConfig? {
+        let entries = devices ?? []
+        if let exact = entries.first(where: {
+            !($0.model ?? "").isEmpty && $0.matches(device)
+        }) {
+            return exact
+        }
+        return entries.first {
+            $0.device.matches(device.id) && ($0.model ?? "").isEmpty
+        }
     }
 
     public var enabledDevices: [DeviceConfig] {

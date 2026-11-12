@@ -82,10 +82,10 @@ struct BoardWindow: View {
                 .foregroundStyle(.secondary)
 
             Picker("", selection: Binding(
-                get: { model.config.device?.description ?? "" },
+                get: { model.activeDeviceEntry?.id ?? "" },
                 set: { key in
                     if let choice = model.deviceChoices.first(where: { $0.id == key }) {
-                        model.selectDevice(choice.device)
+                        model.selectDevice(choice)
                     }
                 }
             )) {

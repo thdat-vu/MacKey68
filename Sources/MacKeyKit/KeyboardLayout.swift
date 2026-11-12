@@ -90,8 +90,11 @@ public enum Layouts {
         return layout(for: id)
     }
 
-    /// Best guess from the product string or the VID:PID.
-    public static func detect(product: String, vendorID: Int?, productID: Int?) -> LayoutID {
+    /// Best guess from the product string, brand/model names or the VID:PID.
+    public static func detect(product: String,
+                              manufacturer: String = "",
+                              vendorID: Int?,
+                              productID: Int?) -> LayoutID {
         if let vendorID, let productID {
             let key = String(format: "%04X:%04X", vendorID, productID)
             switch key {
@@ -101,20 +104,82 @@ public enum Layouts {
             }
         }
 
-        let text = product.lowercased()
-        if text.contains("k68") || text.contains("65%") || text.contains("67-key") {
-            return .k68
+        let text = "\(manufacturer) \(product)".lowercased()
+
+        // Specific models first: "G915 TKL", "Keychron K8", ...
+        for (needle, layout) in knownModels where text.contains(needle) {
+            return layout
         }
-        if text.contains("ek387") || text.contains("tkl") || text.contains("87-key") {
+
+        // Generic size hints.
+        if text.contains("tkl") || text.contains("tenkeyless")
+            || text.contains("87-key") || text.contains("87 key") {
             return .tkl
         }
-        if text.contains("full") || text.contains("104") || text.contains("108") {
+        if text.contains("104") || text.contains("108")
+            || text.contains("full-size") || text.contains("full size")
+            || text.contains("100%") {
+            return .full
+        }
+        if text.contains("65%") || text.contains("68-key") || text.contains("68 key")
+            || text.contains("67-key") || text.contains("60%")
+            || text.contains("61-key") || text.contains("61 key") {
+            return .k68
+        }
+        if text.contains("75%") || text.contains("84-key") || text.contains("84 key") {
+            return .tkl
+        }
+
+        if text.contains("k68") || text.contains("65%") {
+            return .k68
+        }
+        if text.contains("ek387") {
+            return .tkl
+        }
+        if text.contains("full") {
             return .full
         }
         // Unknown external keyboard: TKL is the most common shape and still
         // shows every key that matters for a Mac layout.
         return .tkl
     }
+
+    /// Common retail boards. Longest/most specific patterns first.
+    private static let knownModels: [(String, LayoutID)] = [
+        // 65% / 68-key
+        ("gmmk 2 65", .k68),
+        ("keychron k6", .k68), ("keychron k7", .k68), ("keychron k12", .k68),
+        ("keychron q2", .k68), ("keychron v2", .k68), ("keychron k9", .k68),
+        ("akko 3068", .k68), ("akko 3061", .k68), ("akko mod005", .k68),
+        ("akko mod 005", .k68),
+        ("fl680", .k68), ("cmk68", .k68), ("fl-cmk68", .k68),
+        ("rk68", .k68), ("rk61", .k68),
+        ("huntsman mini", .k68), ("k65", .k68), ("k68", .k68),
+
+        // TKL / 87-key (before generic model names that also contain "g915")
+        ("g915 tkl", .tkl), ("g913 tkl", .tkl), ("g715 tkl", .tkl),
+        ("keychron k8", .tkl), ("keychron q3", .tkl), ("keychron v3", .tkl),
+        ("keychron c1", .tkl),
+        ("akko 3087", .tkl), ("akko 5087", .tkl), ("akko cmk87", .tkl),
+        ("akko 5075", .tkl), ("akko 3084", .tkl),
+        ("fl750", .tkl), ("cmk87", .tkl), ("fl 87", .tkl),
+        ("rk87", .tkl), ("rk84", .tkl),
+        ("huntsman tkl", .tkl), ("blackwidow v3 tkl", .tkl), ("k70 tkl", .tkl),
+
+        // Full-size / 104-key
+        ("keychron k5", .full), ("keychron q6", .full), ("keychron v6", .full),
+        ("keychron k10", .full), ("keychron c2", .full),
+        ("akko 3108", .full), ("akko 5108", .full), ("akko 3098", .full),
+        ("akko 5098", .full),
+        ("fl104", .full), ("fl980", .full), ("cmk98", .full), ("cmk99", .full),
+        ("rk100", .full), ("rk104", .full),
+        ("g915", .full), ("g913", .full),
+        ("blackwidow v3", .full), ("k70", .full), ("k95", .full),
+
+        // Brand fallbacks
+        ("keychron", .tkl), ("akko", .tkl), ("royal kludge", .tkl),
+        ("fl-esports", .tkl), ("fl esports", .tkl),
+    ]
 
     // MARK: - Layout builder
 

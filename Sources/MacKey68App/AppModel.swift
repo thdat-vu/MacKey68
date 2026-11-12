@@ -13,11 +13,12 @@ struct AppRef: Equatable {
 /// Một bàn phím để hiện trong picker (đang cắm hoặc đã cấu hình trước đó).
 struct DeviceChoice: Identifiable, Equatable {
     var device: DeviceID
+    var model: String?
     var name: String
     var layoutID: LayoutID
     var online: Bool
 
-    var id: String { device.description }
+    var id: String { "\(device.description)|\(model ?? "")" }
     var label: String {
         let suffix = online ? "" : " · offline"
         return "\(name.isEmpty ? device.description : name)\(suffix)"
@@ -93,11 +94,17 @@ final class AppModel: ObservableObject {
         self.config = config
         self.activeProfileID = config.defaultProfile.id
         self.availableDevices = detected
-        let activeIsConnected = config.device.map { active in
-            detected.contains { active.matches($0.id) }
-        } ?? false
-        if !activeIsConnected {
-            self.config.device = Self.preferredDevice(in: detected, config: config)?.id
+        let activeConnected = Self.isConnected(device: config.device,
+                                               model: config.activeModel,
+                                               in: detected)
+        if !activeConnected {
+            let preferred = Self.preferredDevice(in: detected, config: config)
+            self.config.device = preferred?.id
+            self.config.activeModel = preferred.map(Self.modelName(for:))
+        } else if self.config.activeModel == nil {
+            self.config.activeModel = detected.first {
+                config.device?.matches($0.id) == true
+            }.map(Self.modelName(for:))
         }
         self.detectedDevice = config.device.flatMap { active in
             detected.first { active.matches($0.id) }?.id
@@ -113,35 +120,46 @@ final class AppModel: ObservableObject {
 
     // MARK: - Device + layout
 
+    /// Entry of the keyboard selected in the picker (VID:PID + model).
+    var activeDeviceEntry: DeviceConfig? {
+        guard let active = config.device else { return nil }
+        if let model = config.activeModel, !model.isEmpty {
+            return config.devices?.first { $0.matches(active, model: model) }
+        }
+        return config.deviceConfig(for: active)
+    }
+
     /// Layout to draw for the selected keyboard.
     var layoutID: LayoutID {
-        guard let active = config.device,
-              let entry = config.deviceConfig(for: active) else { return .tkl }
-        return entry.layoutID
+        activeDeviceEntry?.layoutID ?? .tkl
     }
 
     var layout: KeyboardLayout { Layouts.layout(for: layoutID) }
 
     var deviceChoices: [DeviceChoice] {
         var choices: [DeviceChoice] = []
-        var seen = Set<String>()
+        var onlineIDs = Set<String>()
 
         for device in availableDevices {
-            let entry = config.deviceConfig(for: device.id)
-            choices.append(DeviceChoice(
+            let entry = config.deviceConfig(for: device)
+            let choice = DeviceChoice(
                 device: device.id,
+                model: Self.modelName(for: device),
                 name: entry?.name.isEmpty == false ? entry!.name : Self.friendlyName(for: device),
                 layoutID: entry?.layoutID
                     ?? Layouts.detect(product: device.product,
+                                      manufacturer: device.manufacturer,
                                       vendorID: device.vendorID,
                                       productID: device.productID),
                 online: true
-            ))
-            seen.insert(device.id.description)
+            )
+            choices.append(choice)
+            onlineIDs.insert(device.id.description)
         }
 
-        for entry in config.devices ?? [] where !seen.contains(entry.id) {
+        for entry in config.devices ?? [] where !onlineIDs.contains(entry.device.description) {
             choices.append(DeviceChoice(device: entry.device,
+                                        model: entry.model,
                                         name: entry.name,
                                         layoutID: entry.layoutID,
                                         online: false))
@@ -153,17 +171,18 @@ final class AppModel: ObservableObject {
         }
     }
 
-    func selectDevice(_ device: DeviceID) {
-        config.device = device
-        if config.deviceConfig(for: device) == nil {
-            let detected = availableDevices.first { $0.id == device }
-            let layout = Layouts.detect(product: detected?.product ?? "",
-                                        vendorID: device.vendorID,
-                                        productID: device.productID)
+    func selectDevice(_ choice: DeviceChoice) {
+        config.device = choice.device
+        config.activeModel = choice.model
+
+        if config.devices?.contains(where: {
+            $0.matches(choice.device, model: choice.model)
+        }) != true {
             config.devices = (config.devices ?? []) + [
-                DeviceConfig(device: device,
-                             name: detected.map(Self.friendlyName(for:)) ?? device.description,
-                             layout: layout.rawValue)
+                DeviceConfig(device: choice.device,
+                             model: choice.model,
+                             name: choice.name,
+                             layout: choice.layoutID.rawValue)
             ]
         }
         selectedKey = nil
@@ -174,11 +193,14 @@ final class AppModel: ObservableObject {
     func setLayout(_ layout: LayoutID) {
         guard let active = config.device else { return }
         var devices = config.devices ?? []
+        let model = config.activeModel
 
-        if let index = devices.firstIndex(where: { $0.device.matches(active) }) {
+        if let index = devices.firstIndex(where: { $0.matches(active, model: model) }) {
             devices[index].layout = layout.rawValue
+            if devices[index].model == nil { devices[index].model = model }
         } else {
             devices.append(DeviceConfig(device: active,
+                                        model: model,
                                         name: active.description,
                                         layout: layout.rawValue))
         }
@@ -348,7 +370,13 @@ final class AppModel: ObservableObject {
 
         for device in detected {
             let friendly = Self.friendlyName(for: device)
-            if let index = entries.firstIndex(where: { $0.device.matches(device.id) }) {
+            let modelName = Self.modelName(for: device)
+            if let index = entries.firstIndex(where: { $0.matches(device) }) {
+                if entries[index].model == nil || entries[index].model == device.product
+                    || entries[index].model == device.label {
+                    entries[index].model = modelName
+                    changed = true
+                }
                 // Nâng tên chung chung ("SONiX USB DEVICE") thành tên dễ đọc.
                 if entries[index].name.isEmpty || entries[index].name == device.label,
                    entries[index].name != friendly {
@@ -359,20 +387,28 @@ final class AppModel: ObservableObject {
             }
             entries.append(DeviceConfig(
                 device: device.id,
+                model: modelName,
                 name: friendly,
                 layout: Layouts.detect(product: device.product,
+                                       manufacturer: device.manufacturer,
                                        vendorID: device.vendorID,
                                        productID: device.productID).rawValue
             ))
             changed = true
         }
 
-        let activeConnected = config.device.map { active in
-            detected.contains { active.matches($0.id) }
-        } ?? false
+        let activeConnected = Self.isConnected(device: config.device,
+                                               model: config.activeModel,
+                                               in: detected)
         if !activeConnected,
            let preferred = Self.preferredDevice(in: detected, config: config) {
             config.device = preferred.id
+            config.activeModel = Self.modelName(for: preferred)
+            changed = true
+        } else if config.activeModel == nil,
+                  let active = config.device,
+                  let match = detected.first(where: { active.matches($0.id) }) {
+            config.activeModel = Self.modelName(for: match)
             changed = true
         }
 
@@ -412,18 +448,19 @@ final class AppModel: ObservableObject {
         guard ready else { return }
 
         let connected = availableDevices
-        var targets = config.enabledDevices.filter { entry in
-            connected.contains { entry.device.matches($0.id) }
+        var targets: [DeviceID] = []
+        for entry in config.enabledDevices {
+            for device in connected where entry.matches(device) {
+                if !targets.contains(where: { $0 == device.id }) {
+                    targets.append(device.id)
+                }
+            }
         }
         // Config cũ chỉ có `device`, chưa có `devices`.
         if targets.isEmpty,
            let legacy = config.device,
            connected.contains(where: { legacy.matches($0.id) }) {
-            targets = [DeviceConfig(device: legacy,
-                                    name: legacy.description,
-                                    layout: Layouts.detect(product: "",
-                                                           vendorID: legacy.vendorID,
-                                                           productID: legacy.productID).rawValue)]
+            targets = [legacy]
         }
         guard !targets.isEmpty else {
             status = .noDevice
@@ -434,11 +471,11 @@ final class AppModel: ObservableObject {
             let resolved = try KeymapResolver.resolve(activeProfile.mappings)
             if enabled {
                 for target in targets {
-                    _ = try HIDUtil.apply(resolved, matching: target.device)
+                    _ = try HIDUtil.apply(resolved, matching: target)
                 }
             } else {
                 for target in targets {
-                    _ = try HIDUtil.reset(matching: target.device)
+                    _ = try HIDUtil.reset(matching: target)
                 }
             }
             status = enabled
@@ -465,8 +502,44 @@ final class AppModel: ObservableObject {
         KeyCodes.name(for: usage) ?? String(format: "0x%02X", usage)
     }
 
+    static func modelName(for device: HIDDevice) -> String {
+        let product = device.product.trimmingCharacters(in: .whitespacesAndNewlines)
+        let label = device.label.trimmingCharacters(in: .whitespacesAndNewlines)
+        let generic = ["", "usb device", "keyboard", "usb keyboard", "hid keyboard", "device"]
+        // Generic product strings need the manufacturer ("SONiX USB DEVICE"),
+        // branded ones stay stable ("K68 BT5.0").
+        if generic.contains(product.lowercased()), !label.isEmpty {
+            return label
+        }
+        return product.isEmpty ? label : product
+    }
+
+    private static func modelMatches(_ model: String, _ device: HIDDevice) -> Bool {
+        model.caseInsensitiveCompare(device.product) == .orderedSame
+            || model.caseInsensitiveCompare(device.label) == .orderedSame
+    }
+
+    private static func isConnected(device: DeviceID?,
+                                    model: String?,
+                                    in detected: [HIDDevice]) -> Bool {
+        guard let device else { return false }
+        if let model, !model.isEmpty {
+            return detected.contains {
+                device.matches($0.id) && modelMatches(model, $0)
+            }
+        }
+        return detected.contains { device.matches($0.id) }
+    }
+
     private static func preferredDevice(in detected: [HIDDevice],
                                         config: KeymapConfig) -> HIDDevice? {
+        if let active = config.device,
+           let model = config.activeModel, !model.isEmpty,
+           let exact = detected.first(where: {
+               active.matches($0.id) && modelMatches(model, $0)
+           }) {
+            return exact
+        }
         if let active = config.device,
            let match = detected.first(where: { active.matches($0.id) }) {
             return match
@@ -483,11 +556,19 @@ final class AppModel: ObservableObject {
         var entries = config.devices ?? []
 
         func ensure(_ device: HIDDevice) {
-            guard !entries.contains(where: { $0.device.matches(device.id) }) else { return }
+            if let index = entries.firstIndex(where: { $0.matches(device) }) {
+                if entries[index].model == nil || entries[index].model == device.product
+                    || entries[index].model == device.label {
+                    entries[index].model = modelName(for: device)
+                }
+                return
+            }
             entries.append(DeviceConfig(
                 device: device.id,
+                model: modelName(for: device),
                 name: friendlyName(for: device),
                 layout: Layouts.detect(product: device.product,
+                                       manufacturer: device.manufacturer,
                                        vendorID: device.vendorID,
                                        productID: device.productID).rawValue
             ))
@@ -500,8 +581,10 @@ final class AppModel: ObservableObject {
             let match = detected.first { legacy.matches($0.id) }
             entries.append(DeviceConfig(
                 device: legacy,
+                model: match.map(modelName(for:)),
                 name: match.map(friendlyName(for:)) ?? legacy.description,
                 layout: Layouts.detect(product: match?.product ?? "",
+                                       manufacturer: match?.manufacturer ?? "",
                                        vendorID: legacy.vendorID,
                                        productID: legacy.productID).rawValue
             ))
@@ -511,6 +594,11 @@ final class AppModel: ObservableObject {
             config.device = entries.first { entry in
                 detected.contains { entry.device.matches($0.id) }
             }?.device
+        }
+        if config.activeModel == nil,
+           let active = config.device,
+           let match = detected.first(where: { active.matches($0.id) }) {
+            config.activeModel = modelName(for: match)
         }
 
         config.devices = entries
@@ -530,15 +618,18 @@ final class AppModel: ObservableObject {
     static func seedConfig(detected: [HIDDevice] = HIDDevices.uniqueKeyboards()) -> KeymapConfig {
         let devices = detected.map { device in
             DeviceConfig(device: device.id,
-                         name: device.label,
+                         model: modelName(for: device),
+                         name: friendlyName(for: device),
                          layout: Layouts.detect(product: device.product,
+                                                manufacturer: device.manufacturer,
                                                 vendorID: device.vendorID,
                                                 productID: device.productID).rawValue)
         }
+        let active = devices.first(where: { $0.device.vendorID == 0x9AEA }) ?? devices.first
         return KeymapConfig(
             name: "MacKey68",
-            device: devices.first(where: { $0.device.vendorID == 0x9AEA })?.device
-                ?? devices.first?.device,
+            device: active?.device,
+            activeModel: active?.model,
             devices: devices,
             mappings: nil,
             profiles: [

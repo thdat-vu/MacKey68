@@ -15,7 +15,7 @@ public final class DeviceWatcher {
     private var notifyPort: IONotificationPortRef?
     private var arrivalIterator: io_iterator_t = 0
     private var removalIterator: io_iterator_t = 0
-    private var applied = Set<DeviceID>()
+    private var applied = Set<String>()
 
     /// - Parameter matching: when set, only that vendor/product is reported.
     public init(matching: DeviceID? = nil,
@@ -67,8 +67,8 @@ public final class DeviceWatcher {
             guard let device = read(service), device.isKeyboard else { continue }
             if let wanted, !wanted.matches(device.id) { continue }
             // A device publishes several HID services (keyboard, consumer page,
-            // vendor page, ...); only re-apply once per physical device.
-            guard applied.insert(device.id).inserted else { continue }
+            // vendor page, ...); only re-apply once per physical keyboard model.
+            guard applied.insert("\(device.id.description)|\(device.product)").inserted else { continue }
             onAttach(device)
         }
     }
@@ -77,7 +77,7 @@ public final class DeviceWatcher {
         while case let service = IOIteratorNext(iterator), service != 0 {
             defer { IOObjectRelease(service) }
             guard let device = read(service) else { continue }
-            applied.remove(device.id)
+            applied.remove("\(device.id.description)|\(device.product)")
             onDetach?(device.id)
         }
     }

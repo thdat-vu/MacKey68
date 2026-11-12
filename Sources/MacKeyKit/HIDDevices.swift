@@ -11,6 +11,22 @@ public struct HIDDevice: Equatable {
     public var usage: Int
     public var transport: String
 
+    public init(vendorID: Int,
+                productID: Int,
+                product: String,
+                manufacturer: String,
+                usagePage: Int,
+                usage: Int,
+                transport: String) {
+        self.vendorID = vendorID
+        self.productID = productID
+        self.product = product
+        self.manufacturer = manufacturer
+        self.usagePage = usagePage
+        self.usage = usage
+        self.transport = transport
+    }
+
     public var isKeyboard: Bool { usagePage == 0x01 && (usage == 0x06 || usage == 0x07) }
 
     public var id: DeviceID { DeviceID(vendorID: vendorID, productID: productID) }
@@ -64,7 +80,7 @@ public enum HIDDevices {
     /// devices that expose a stray keyboard collection (gaming mice), and
     /// deduplicates the many HID services one board publishes.
     public static func uniqueKeyboards() -> [HIDDevice] {
-        let grouped = Dictionary(grouping: all(), by: \.id)
+        let grouped = Dictionary(grouping: all(), by: { "\($0.id.description)|\($0.product)" })
         var result: [HIDDevice] = []
 
         for entries in grouped.values {

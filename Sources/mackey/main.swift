@@ -127,9 +127,10 @@ func runList() {
     }
     for device in keyboards {
         let layout = Layouts.detect(product: device.product,
+                                    manufacturer: device.manufacturer,
                                     vendorID: device.vendorID,
                                     productID: device.productID)
-        let managed = config?.devices?.contains { $0.device.matches(device.id) } == true
+        let managed = config?.devices?.contains { $0.matches(device) } == true
         print(String(format: "  %@  %@  [%@]  layout %@%@",
                      device.id.description,
                      device.label.isEmpty ? "(không tên)" : device.label,
@@ -181,7 +182,7 @@ func runApply(_ options: Options) {
         targets = [device]
     } else {
         let managed = config.enabledDevices.filter { entry in
-            connected.contains { entry.device.matches($0.id) }
+            connected.contains { entry.matches($0) }
         }
         targets = managed.isEmpty
             ? [config.device].compactMap { $0 }
@@ -441,6 +442,34 @@ func runSelftest() -> Never {
           "detect Edra EK387 Pro as TKL")
     check(Layouts.detect(product: "Generic 104 keyboard", vendorID: nil, productID: nil) == .full,
           "detect full-size by name")
+    check(Layouts.detect(product: "K8 Pro", manufacturer: "Keychron",
+                         vendorID: nil, productID: nil) == .tkl,
+          "detect Keychron K8 as TKL")
+    check(Layouts.detect(product: "K5", manufacturer: "Keychron",
+                         vendorID: nil, productID: nil) == .full,
+          "detect Keychron K5 as full-size")
+    check(Layouts.detect(product: "3068B Plus", manufacturer: "Akko",
+                         vendorID: nil, productID: nil) == .k68,
+          "detect Akko 3068 as 68-key")
+    check(Layouts.detect(product: "FL104", manufacturer: "FL-Esports",
+                         vendorID: nil, productID: nil) == .full,
+          "detect FL104 as full-size")
+    check(Layouts.detect(product: "G915 TKL", manufacturer: "Logitech",
+                         vendorID: nil, productID: nil) == .tkl,
+          "G915 TKL beats generic G915")
+    check(Layouts.detect(product: "G915", manufacturer: "Logitech",
+                         vendorID: nil, productID: nil) == .full,
+          "G915 full-size")
+
+    let sonixID = DeviceID(vendorID: 0x0C45, productID: 0x7644)
+    let edra = DeviceConfig(device: sonixID, model: "SONiX USB DEVICE", layout: "tkl")
+    let other = DeviceConfig(device: sonixID, model: "Some Other Board", layout: "68")
+    let edraHID = HIDDevice(vendorID: 0x0C45, productID: 0x7644,
+                            product: "SONiX USB DEVICE", manufacturer: "SONiX",
+                            usagePage: 1, usage: 6, transport: "USB")
+    check(edra.matches(edraHID), "same VID:PID + model matches")
+    check(!other.matches(edraHID), "same VID:PID but different model does not match")
+    check(edra.id != other.id, "model makes config entries unique")
     let k68 = Layouts.layout(for: .k68)
     check(k68.keys.first { $0.usage == 0x39 }?.label == "caps", "K68 caps key present")
     let full = Layouts.layout(for: .full)
