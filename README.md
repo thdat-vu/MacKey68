@@ -174,7 +174,8 @@ In that window:
   bar also has **Language**.
 - The menu bar has **Launch at login** — the DMG build turns it on at first launch.
 - Updates arrive through **Sparkle** from GitHub Releases; menu bar → **Check for
-  Updates…**.
+  Updates…**. Ad-hoc builds can still hit Gatekeeper; Developer ID + notarization is
+  recommended for seamless updates.
 - The first launch shows a 4-step guide. Reopen it from the menu bar → **Guide…** or the
   **?** button in the window.
 
@@ -581,7 +582,8 @@ Trong cửa sổ đó:
   Menu bar cũng có mục **Ngôn ngữ / Language**.
 - Menu bar có **Tự chạy khi đăng nhập / Launch at login** — bản cài bằng DMG tự bật mục
   này ở lần mở đầu tiên.
-- Cập nhật qua **Sparkle** từ GitHub Releases; menu bar → **Kiểm tra cập nhật…**.
+- Cập nhật qua **Sparkle** từ GitHub Releases; menu bar → **Kiểm tra cập nhật…**. Bản
+  ad-hoc vẫn có thể bị Gatekeeper chặn; nên ký Developer ID + notarize để cập nhật mượt.
 - Lần đầu mở có popup hướng dẫn 4 bước. Mở lại bằng menu bar → **Hướng dẫn…** hoặc nút
   **?** trong cửa sổ.
 
