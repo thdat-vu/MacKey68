@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: macos-14
+    runs-on: macos-15
     env:
       MACKEY_SIGN_IDENTITY: ${{ secrets.MACKEY_SIGN_IDENTITY }}
       MACKEY_CERT_P12_BASE64: ${{ secrets.MACKEY_CERT_P12_BASE64 }}
