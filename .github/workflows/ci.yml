@@ -9,8 +9,13 @@ on:
 jobs:
   build:
     runs-on: macos-15
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Allow SwiftPM to fetch dependencies
+        run: git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
 
       - name: Build
         run: swift build -c release
