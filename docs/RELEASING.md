@@ -119,6 +119,7 @@ git push -u origin main
 Người dùng cài:
 
 ```bash
+brew trust thdat-vu/tap
 brew install --cask thdat-vu/tap/mackey68
 ```
 

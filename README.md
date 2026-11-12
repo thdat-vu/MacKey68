@@ -144,6 +144,7 @@ window is open its icon appears in the Dock and disappears when you close the wi
 Or install a release build with Homebrew:
 
 ```bash
+brew trust thdat-vu/tap
 brew install --cask thdat-vu/tap/mackey68
 ```
 
@@ -548,6 +549,7 @@ hiện tạm trên Dock và biến mất khi đóng cửa sổ.
 Hoặc cài bản release bằng Homebrew:
 
 ```bash
+brew trust thdat-vu/tap
 brew install --cask thdat-vu/tap/mackey68
 ```
 
