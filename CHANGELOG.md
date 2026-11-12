@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0
+
+- Rename, duplicate, delete and set a default profile.
+- `defaultProfileID` in config, backward compatible with old configs.
+- Two more presets: Caps/Ctrl swap and Right Alt as Command.
+- Profile menu (⋯) next to the profile picker.
+
 ## 0.5.1
 
 - Profile JSON decoder accepts hand-written files that omit `id`, `autoFor` or
