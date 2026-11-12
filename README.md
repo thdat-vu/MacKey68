@@ -18,13 +18,15 @@ usages, so it can be remapped cleanly at the OS level. This repo is that app. It
 handles other standard HID keyboards: 65%/68-key, TKL and full-size boards.
 
 <p align="center">
-  <img src="docs/screenshots/mackey68-board.png"
-       alt="MacKey68 keyboard window with the 68-key board drawn out"
-       width="820">
+  <a href="docs/demo.mp4">
+    <img src="docs/demo.gif"
+         alt="MacKey68 demo: remapping, TKL layout, Key Test and the first-run guide"
+         width="900">
+  </a>
 </p>
 
-*The keyboard window: click any key to remap it. Remapped keys are highlighted, and the
-profile switches automatically when you open a linked app.*
+*20-second demo: remap keys, switch layouts, run Key Test and see the first-run guide
+([MP4](docs/demo.mp4)).*
 
 ## The keyboard
 
