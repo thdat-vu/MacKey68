@@ -335,6 +335,17 @@ Key names accept common spellings: `Cmd`, `Command`, `Win`, `Opt`, `Option`, `Al
 - Keyboard Lab needs Input Monitoring. Ad-hoc builds may ask again after an update;
   Developer ID signing keeps that permission stable.
 
+### Troubleshooting
+
+**Keyboard Lab says Input Monitoring denied.** Open System Settings → Privacy &
+Security → Input Monitoring, click **+**, press ⌘⇧G and paste the app path (the Lab has a
+**Copy app path** button). Then turn MacKey68 on and press Retry. Ad-hoc builds may need
+this again after an update; Developer ID signing keeps the permission stable.
+
+**The app is not in /Applications.** `./scripts/install-app.sh` installs to
+`~/Applications/MacKey68.app`; Sparkle updates it there in place. The DMG installs to
+`/Applications` if you drag it there.
+
 ### If you need more
 
 [Karabiner-Elements](https://karabiner-elements.pqrs.org) can do all of the above
@@ -744,6 +755,17 @@ Tên phím chấp nhận cả cách viết thường dùng: `Cmd`, `Command`, `W
   thừa/thiếu vài phím.
 - Keyboard Lab cần Input Monitoring. Bản ad-hoc có thể phải cấp lại sau mỗi lần update;
   ký Developer ID sẽ giữ quyền ổn định hơn.
+
+### Xử lý sự cố
+
+**Keyboard Lab báo thiếu Input Monitoring.** Mở System Settings → Privacy & Security →
+Input Monitoring, bấm **+**, nhấn ⌘⇧G rồi dán đường dẫn app (nút **Sao chép đường dẫn
+app** trong Lab). Bật MacKey68 rồi bấm Thử lại. Bản ad-hoc có thể phải làm lại sau mỗi
+lần update; ký Developer ID sẽ giữ quyền ổn định.
+
+**Không thấy app trong /Applications.** `./scripts/install-app.sh` cài vào
+`~/Applications/MacKey68.app`; Sparkle update tại chỗ. Bản DMG sẽ nằm ở `/Applications`
+nếu bạn kéo vào đó.
 
 ### Nếu cần nhiều hơn
 

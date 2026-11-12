@@ -223,6 +223,10 @@ struct KeyboardLabView: View {
                 Button(model.t("Mở System Settings", "Open System Settings")) {
                     lab.openInputMonitoringSettings()
                 }
+                Button(model.t("Sao chép đường dẫn app", "Copy app path")) {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(Bundle.main.bundlePath, forType: .string)
+                }
                 Button(model.t("Thử lại", "Retry")) { lab.start() }
             }
         }
