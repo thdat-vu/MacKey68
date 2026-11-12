@@ -39,12 +39,62 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// `open "mackey68://board"` hoạt động cả khi app đã chạy sẵn.
+    /// `mackey68://import?url=https://…` tải và nhập một profile được chia sẻ.
     func application(_ application: NSApplication, open urls: [URL]) {
-        guard urls.contains(where: { $0.scheme?.lowercased() == "mackey68" }) else { return }
+        guard let link = urls.first(where: { $0.scheme?.lowercased() == "mackey68" }) else {
+            return
+        }
+
+        if link.host?.lowercased() == "import" {
+            importProfile(from: link)
+            return
+        }
+
         // Chờ app khởi động xong rồi mới đưa cửa sổ ra trước.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
             BoardWindowController.shared.show(model: AppModel.shared)
         }
+    }
+
+    private func importProfile(from link: URL) {
+        let model = AppModel.shared
+        BoardWindowController.shared.show(model: model)
+
+        let components = URLComponents(url: link, resolvingAgainstBaseURL: false)
+        let target = components?.queryItems?.first { $0.name == "url" }?.value
+        guard let target,
+              let url = URL(string: target),
+              url.scheme?.lowercased() == "https" else {
+            presentImportError("Link phải có dạng mackey68://import?url=https://…")
+            return
+        }
+
+        URLSession.shared.dataTask(with: url) { data, _, error in
+            DispatchQueue.main.async {
+                if let error {
+                    self.presentImportError(error.localizedDescription)
+                    return
+                }
+                guard let data else {
+                    self.presentImportError("Không tải được file profile.")
+                    return
+                }
+                do {
+                    _ = try model.importProfile(data: data)
+                } catch {
+                    self.presentImportError(error.localizedDescription)
+                }
+            }
+        }.resume()
+    }
+
+    private func presentImportError(_ message: String) {
+        let alert = NSAlert()
+        alert.messageText = "MacKey68"
+        alert.informativeText = message
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
 }
 
@@ -105,9 +155,43 @@ struct MenuContent: View {
             }
         }
         Button(model.t("Áp dụng lại", "Reapply")) { model.apply() }
+        Button(model.t("Kiểm tra cập nhật…", "Check for Updates…")) {
+            Updater.checkForUpdates()
+        }
+        Button(model.t("Giới thiệu MacKey68…", "About MacKey68…")) {
+            showAbout()
+        }
 
         Divider()
 
         Button(model.t("Thoát MacKey68", "Quit MacKey68")) { NSApp.terminate(nil) }
+    }
+
+    private func showAbout() {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        let alert = NSAlert()
+        alert.messageText = "MacKey68 \(version)"
+        alert.informativeText = model.t(
+            """
+            Công cụ remap bàn phím mã nguồn mở cho macOS.
+            Không liên kết, không được bảo trợ bởi Logitech, Razer, Apple, Ziyoulang, \
+            Keychron, Akko, FL-Esports hay bất kỳ hãng bàn phím nào. Tên sản phẩm và \
+            thương hiệu thuộc về chủ sở hữu tương ứng và chỉ được dùng để mô tả khả năng \
+            tương thích.
+
+            Giấy phép GPL-3.0-or-later. Không có bảo hành.
+            """,
+            """
+            Open-source keyboard remapper for macOS.
+            Not affiliated with, endorsed by, or sponsored by Logitech, Razer, Apple, \
+            Ziyoulang, Keychron, Akko, FL-Esports or any other keyboard vendor. Product \
+            names and trademarks belong to their respective owners and are used only to \
+            describe compatibility.
+
+            GPL-3.0-or-later. No warranty.
+            """
+        )
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
 }

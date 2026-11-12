@@ -12,9 +12,18 @@ fi
 
 APP="build/MacKey68.app"
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"
 cp .build/release/MacKey68 "$APP/Contents/MacOS/MacKey68"
 cp Assets/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+
+# Sparkle.framework is a SwiftPM binary artifact; copy it into the bundle and
+# teach the executable where to find it.
+SPARKLE_FW="$(find .build -maxdepth 4 -name Sparkle.framework -type d | head -1)"
+if [[ -n "$SPARKLE_FW" ]]; then
+    cp -R "$SPARKLE_FW" "$APP/Contents/Frameworks/"
+    install_name_tool -add_rpath "@executable_path/../Frameworks" \
+        "$APP/Contents/MacOS/MacKey68" 2>/dev/null || true
+fi
 
 cat > "$APP/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -27,11 +36,20 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleExecutable</key>      <string>MacKey68</string>
     <key>CFBundlePackageType</key>     <string>APPL</string>
     <key>CFBundleIconFile</key>        <string>AppIcon</string>
-    <key>CFBundleShortVersionString</key> <string>0.4.0</string>
-    <key>CFBundleVersion</key>         <string>1</string>
+    <key>CFBundleShortVersionString</key> <string>0.5.0</string>
+    <key>CFBundleVersion</key>         <string>500</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright © 2026 Vu Thanh Dat. Independent project; not affiliated with keyboard vendors. GPL-3.0-or-later.</string>
     <key>LSMinimumSystemVersion</key>  <string>13.0</string>
     <key>LSUIElement</key>             <true/>
     <key>NSHighResolutionCapable</key> <true/>
+    <key>SUFeedURL</key>
+    <string>https://github.com/thdat-vu/MacKey68/releases/latest/download/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>bRGxLeunSi6BlW8Dx8OgMzGxotvoPeEwhsrjtlOchOY=</string>
+    <key>SUEnableAutomaticChecks</key> <true/>
+    <key>SUScheduledCheckInterval</key> <integer>86400</integer>
+    <key>SUAllowsAutomaticUpdates</key> <true/>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>

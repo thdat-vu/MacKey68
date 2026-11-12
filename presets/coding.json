@@ -1,0 +1,24 @@
+{
+  "format": "mackey68.profile",
+  "version": 1,
+  "profile": {
+    "id": "coding",
+    "name": "Coding",
+    "autoFor": [],
+    "mappings": [
+      {
+        "from": "LeftAlt",
+        "to": "LeftGUI"
+      },
+      {
+        "from": "LeftGUI",
+        "to": "LeftAlt"
+      },
+      {
+        "from": "CapsLock",
+        "to": "Escape"
+      }
+    ]
+  },
+  "keyboard": "any standard HID keyboard"
+}

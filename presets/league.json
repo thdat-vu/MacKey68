@@ -1,0 +1,18 @@
+{
+  "format": "mackey68.profile",
+  "version": 1,
+  "profile": {
+    "id": "league",
+    "name": "League of Legends",
+    "autoFor": [
+      "com.riotgames."
+    ],
+    "mappings": [
+      {
+        "from": "CapsLock",
+        "to": "Grave"
+      }
+    ]
+  },
+  "keyboard": "any standard HID keyboard"
+}

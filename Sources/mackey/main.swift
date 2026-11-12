@@ -470,6 +470,22 @@ func runSelftest() -> Never {
     check(edra.matches(edraHID), "same VID:PID + model matches")
     check(!other.matches(edraHID), "same VID:PID but different model does not match")
     check(edra.id != other.id, "model makes config entries unique")
+
+    print("Profile sharing")
+    let shared = Profile(id: "share-me",
+                         name: "Shared",
+                         autoFor: ["com.riotgames."],
+                         mappings: [KeyMapping(from: "CapsLock", to: "Grave")])
+    if let data = try? ProfileTransfer.data(for: shared, keyboard: "K68"),
+       let back = try? ProfileTransfer.profile(from: data) {
+        check(back == shared, "profile round-trip")
+    } else {
+        check(false, "profile round-trip")
+    }
+    check((try? ProfileTransfer.profile(from: Data("{}".utf8))) == nil,
+          "garbage profile rejected")
+    check(ProfileTransfer.withUniqueID(shared, existing: [shared]).id == "share-me-2",
+          "id collision gets a suffix")
     let k68 = Layouts.layout(for: .k68)
     check(k68.keys.first { $0.usage == 0x39 }?.label == "caps", "K68 caps key present")
     let full = Layouts.layout(for: .full)

@@ -79,6 +79,20 @@ managed, and the drawn board adapts to one of three layouts:
 > The Edra EK387 Pro appears as `SONiX USB DEVICE` (`0x0C45:0x7644`). It is detected as
 > TKL automatically; if a board is guessed wrong, change the Layout picker once.
 
+## Sharing profiles
+
+- Click the share icon in the keyboard window: **Export profile…**, **Import profile…**
+  or **Import from link…**.
+- Built-in presets: MacBook, Coding, Caps = Esc, League of Legends, No Caps Lock.
+- The export format is a small versioned JSON file (`format: "mackey68.profile"`).
+  Imported profiles get a unique id if it already exists.
+- One-click sharing:
+  `mackey68://import?url=https://…/mackey-profile.json` (https only, max 256 KB).
+- Community samples live in [`presets/`](presets/).
+
+Profiles carry their `autoFor` app rules, so a shared League profile keeps its automatic
+switching.
+
 ## Three ways to get a Mac layout
 
 **1. Hardware Mac mode (try this first, 5 seconds).**
@@ -127,6 +141,12 @@ registers the `com.mackey68.app` LaunchAgent so it starts at login, and keeps re
 across unplug/replug. Normally it lives only in the menu bar; while the keyboard
 window is open its icon appears in the Dock and disappears when you close the window.
 
+Or install a release build with Homebrew:
+
+```bash
+brew install --cask thdat-vu/tap/mackey68
+```
+
 Open the drawn keyboard — any of these:
 
 - Click **MacKey68** in Launchpad / Finder (even when the app is already running).
@@ -152,6 +172,8 @@ In that window:
 - **VI / EN** on the right switches the UI language; the choice is remembered. The menu
   bar also has **Language**.
 - The menu bar has **Launch at login** — the DMG build turns it on at first launch.
+- Updates arrive through **Sparkle** from GitHub Releases; menu bar → **Check for
+  Updates…**.
 - The first launch shows a 4-step guide. Reopen it from the menu bar → **Guide…** or the
   **?** button in the window.
 
@@ -179,7 +201,7 @@ rm -rf ~/Applications/MacKey68.app
 ./scripts/package-dmg.sh
 ```
 
-Creates `dist/MacKey68-0.4.0.dmg` with the app and an Applications shortcut to drag it
+Creates `dist/MacKey68-0.5.0.dmg` with the app and an Applications shortcut to drag it
 onto. The app registers itself as a login item on first launch, so users don't need
 Terminal.
 
@@ -196,9 +218,9 @@ To sign with Developer ID (paid Apple Developer account):
 ```bash
 MACKEY_SIGN_IDENTITY="Developer ID Application: Name (TEAMID)" ./scripts/package-dmg.sh
 # then notarize:
-xcrun notarytool submit dist/MacKey68-0.4.0.dmg \
+xcrun notarytool submit dist/MacKey68-0.5.0.dmg \
   --apple-id you@example.com --team-id TEAMID --password "$APP_PASSWORD" --wait
-xcrun stapler staple dist/MacKey68-0.4.0.dmg
+xcrun stapler staple dist/MacKey68-0.5.0.dmg
 ```
 
 The app icon is drawn in code; no source image is needed:
@@ -362,6 +384,20 @@ If you want to embed it in a closed-source product or avoid GPL obligations, a s
 **commercial license** is available (dual licensing): open an issue at
 <https://github.com/thdat-vu/MacKey68/issues>.
 
+## Legal and trademarks
+
+MacKey68 is an independent open-source project. It is **not affiliated with, endorsed
+by, or sponsored by** Logitech, Razer, Apple, Ziyoulang, Keychron, Akko, FL-Esports or
+any other keyboard vendor. Brand and product names are trademarks of their respective
+owners and are used only to describe compatibility.
+
+MacKey68 uses only public macOS HID APIs and standard HID usages. It does not
+reverse-engineer vendor firmware, RGB protocols or onboard macros, and it does not ship
+vendor code or assets.
+
+Apple and Mac are trademarks of Apple Inc. All other trademarks are the property of
+their owners.
+
 ## Contributing
 
 Anyone can contribute. See [CONTRIBUTING.md](CONTRIBUTING.md) for build/test steps and
@@ -448,6 +484,20 @@ bàn phím vẽ ra tự đổi theo một trong ba layout:
 > Edra EK387 Pro hiện lên là `SONiX USB DEVICE` (`0x0C45:0x7644`) và được nhận diện là
 > TKL. Nếu đoán sai, chỉ cần đổi ô Layout một lần.
 
+## Chia sẻ profile
+
+- Bấm icon chia sẻ trong cửa sổ bàn phím: **Xuất profile…**, **Nhập profile…** hoặc
+  **Nhập từ link…**.
+- Preset có sẵn: MacBook, Coding, Caps = Esc, League of Legends, No Caps Lock.
+- File xuất là JSON nhỏ có version (`format: "mackey68.profile"`). Profile nhập vào sẽ
+  được đổi id nếu trùng id đã có.
+- Chia sẻ một chạm:
+  `mackey68://import?url=https://…/mackey-profile.json` (chỉ https, tối đa 256 KB).
+- Mẫu cộng đồng nằm trong [`presets/`](presets/).
+
+Profile mang theo rule `autoFor`, nên profile League được chia sẻ vẫn tự chuyển khi mở
+game.
+
 ## Ba tầng để "ra layout Mac"
 
 **1. Chế độ Mac phần cứng (thử trước, 5 giây).**
@@ -495,6 +545,12 @@ LaunchAgent `com.mackey68.app` để app tự chạy khi đăng nhập và giữ
 rút/cắm bàn phím. Bình thường app chỉ sống ở menu bar; khi mở cửa sổ bàn phím, icon app
 hiện tạm trên Dock và biến mất khi đóng cửa sổ.
 
+Hoặc cài bản release bằng Homebrew:
+
+```bash
+brew install --cask thdat-vu/tap/mackey68
+```
+
 Mở bàn phím vẽ ra — cách nào cũng được:
 
 - Bấm **MacKey68** trong Launchpad / Finder (kể cả khi app đã chạy sẵn).
@@ -523,6 +579,7 @@ Trong cửa sổ đó:
   Menu bar cũng có mục **Ngôn ngữ / Language**.
 - Menu bar có **Tự chạy khi đăng nhập / Launch at login** — bản cài bằng DMG tự bật mục
   này ở lần mở đầu tiên.
+- Cập nhật qua **Sparkle** từ GitHub Releases; menu bar → **Kiểm tra cập nhật…**.
 - Lần đầu mở có popup hướng dẫn 4 bước. Mở lại bằng menu bar → **Hướng dẫn…** hoặc nút
   **?** trong cửa sổ.
 
@@ -550,7 +607,7 @@ rm -rf ~/Applications/MacKey68.app
 ./scripts/package-dmg.sh
 ```
 
-Tạo `dist/MacKey68-0.4.0.dmg`: mở ra có app và lối tắt Applications để kéo vào. App tự
+Tạo `dist/MacKey68-0.5.0.dmg`: mở ra có app và lối tắt Applications để kéo vào. App tự
 đăng ký chạy khi đăng nhập ở lần mở đầu tiên, nên người dùng không cần Terminal.
 
 Về Gatekeeper, có ba mức:
@@ -566,9 +623,9 @@ Về Gatekeeper, có ba mức:
 ```bash
 MACKEY_SIGN_IDENTITY="Developer ID Application: Tên (TEAMID)" ./scripts/package-dmg.sh
 # sau đó notarize:
-xcrun notarytool submit dist/MacKey68-0.4.0.dmg \
+xcrun notarytool submit dist/MacKey68-0.5.0.dmg \
   --apple-id you@example.com --team-id TEAMID --password "$APP_PASSWORD" --wait
-xcrun stapler staple dist/MacKey68-0.4.0.dmg
+xcrun stapler staple dist/MacKey68-0.5.0.dmg
 ```
 
 Icon app được vẽ bằng code, không cần file ảnh nguồn:
@@ -728,6 +785,20 @@ phẩm dẫn xuất từ MacKey68 thì phải công bố source theo GPL.
 Nếu bạn muốn nhúng vào sản phẩm đóng hoặc không muốn tuân theo nghĩa vụ GPL, có thể mua
 **giấy phép thương mại riêng** (dual licensing): mở issue tại
 <https://github.com/thdat-vu/MacKey68/issues> để trao đổi.
+
+## Pháp lý và thương hiệu
+
+MacKey68 là dự án mã nguồn mở độc lập. Dự án **không liên kết, không được bảo trợ hay
+tài trợ bởi** Logitech, Razer, Apple, Ziyoulang, Keychron, Akko, FL-Esports hay bất kỳ
+hãng bàn phím nào. Tên sản phẩm và thương hiệu thuộc về chủ sở hữu tương ứng và chỉ được
+dùng để mô tả khả năng tương thích.
+
+MacKey68 chỉ dùng API HID công khai của macOS và các HID usage chuẩn. Dự án không
+reverse-engineer firmware, giao thức RGB hay macro onboard của hãng, và không kèm mã
+nguồn/tài sản của hãng.
+
+Apple và Mac là thương hiệu của Apple Inc. Các thương hiệu khác thuộc về chủ sở hữu
+tương ứng.
 
 ## Đóng góp
 

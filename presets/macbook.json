@@ -1,0 +1,20 @@
+{
+  "format": "mackey68.profile",
+  "version": 1,
+  "profile": {
+    "id": "macbook",
+    "name": "MacBook",
+    "autoFor": [],
+    "mappings": [
+      {
+        "from": "LeftAlt",
+        "to": "LeftGUI"
+      },
+      {
+        "from": "LeftGUI",
+        "to": "LeftAlt"
+      }
+    ]
+  },
+  "keyboard": "any standard HID keyboard"
+}

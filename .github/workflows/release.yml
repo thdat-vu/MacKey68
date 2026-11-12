@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    env:
+      MACKEY_SIGN_IDENTITY: ${{ secrets.MACKEY_SIGN_IDENTITY }}
+      MACKEY_CERT_P12_BASE64: ${{ secrets.MACKEY_CERT_P12_BASE64 }}
+      MACKEY_CERT_PASSWORD: ${{ secrets.MACKEY_CERT_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      TEAM_ID: ${{ secrets.TEAM_ID }}
+      APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+      SPARKLE_PRIVATE_KEY_BASE64: ${{ secrets.SPARKLE_PRIVATE_KEY_BASE64 }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Import Developer ID certificate
+        if: env.MACKEY_SIGN_IDENTITY != ''
+        run: |
+          echo "$MACKEY_CERT_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p actions mackey-sign.keychain
+          security set-keychain-settings -lut 21600 mackey-sign.keychain
+          security unlock-keychain -p actions mackey-sign.keychain
+          security import "$RUNNER_TEMP/cert.p12" \
+            -k mackey-sign.keychain \
+            -P "$MACKEY_CERT_PASSWORD" \
+            -T /usr/bin/codesign
+          security list-keychains -d user -s mackey-sign.keychain login.keychain-db
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: -s -k actions mackey-sign.keychain
+          rm "$RUNNER_TEMP/cert.p12"
+
+      - name: Build DMG
+        run: ./scripts/package-dmg.sh
+
+      - name: Verify tag matches app version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          APP="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' build/MacKey68.app/Contents/Info.plist)"
+          echo "tag=$TAG app=$APP"
+          [[ "$TAG" == "$APP" ]] || { echo "Tag and CFBundleShortVersionString differ"; exit 1; }
+
+      - name: Notarize
+        if: env.APPLE_ID != ''
+        run: ./scripts/notarize.sh "dist/MacKey68-${GITHUB_REF_NAME#v}.dmg"
+
+      - name: Sign Sparkle appcast
+        if: env.SPARKLE_PRIVATE_KEY_BASE64 != ''
+        run: |
+          echo "$SPARKLE_PRIVATE_KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/sparkle.key"
+          chmod 600 "$RUNNER_TEMP/sparkle.key"
+          SPARKLE_PRIVATE_KEY_FILE="$RUNNER_TEMP/sparkle.key" ./scripts/make-appcast.sh
+
+      - name: Publish release
+        run: |
+          FILES=(dist/*.dmg)
+          [[ -f appcast.xml ]] && FILES+=(appcast.xml)
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${FILES[@]}" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "${FILES[@]}" \
+              --title "MacKey68 ${GITHUB_REF_NAME#v}" \
+              --generate-notes
+          fi

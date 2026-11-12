@@ -273,6 +273,54 @@ final class AppModel: ObservableObject {
         isShowingGuide = false
     }
 
+    // MARK: - Sharing
+
+    var presets: [ProfilePreset] { Presets.all }
+
+    func exportData(profile: Profile? = nil) throws -> Data {
+        let chosen = profile ?? activeProfile
+        return try ProfileTransfer.data(for: chosen, keyboard: config.activeModel)
+    }
+
+    @discardableResult
+    func importProfile(data: Data) throws -> Profile {
+        let incoming = try ProfileTransfer.profile(from: data)
+        let unique = ProfileTransfer.withUniqueID(incoming, existing: config.allProfiles)
+
+        var profiles = config.allProfiles
+        profiles.append(unique)
+        config.profiles = profiles
+        config.mappings = nil
+        activeProfileID = unique.id
+        persist()
+        apply()
+        return unique
+    }
+
+    @discardableResult
+    func importProfile(fileURL: URL) throws -> Profile {
+        try importProfile(data: try Data(contentsOf: fileURL))
+    }
+
+    /// Áp preset vào profile cùng id; nếu chưa có thì thêm mới.
+    func applyPreset(_ preset: ProfilePreset) {
+        var profiles = config.allProfiles
+        if let index = profiles.firstIndex(where: { $0.id == preset.id }) {
+            profiles[index].name = preset.title
+            profiles[index].mappings = preset.mappings
+        } else {
+            profiles.append(Profile(id: preset.id,
+                                    name: preset.title,
+                                    autoFor: [],
+                                    mappings: preset.mappings))
+        }
+        config.profiles = profiles
+        config.mappings = nil
+        activeProfileID = preset.id
+        persist()
+        apply()
+    }
+
     func selectProfile(_ id: String) {
         activeProfileID = id
         apply()

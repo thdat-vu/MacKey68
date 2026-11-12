@@ -1,0 +1,16 @@
+{
+  "format": "mackey68.profile",
+  "version": 1,
+  "profile": {
+    "id": "caps-escape",
+    "name": "Caps = Esc",
+    "autoFor": [],
+    "mappings": [
+      {
+        "from": "CapsLock",
+        "to": "Escape"
+      }
+    ]
+  },
+  "keyboard": "any standard HID keyboard"
+}

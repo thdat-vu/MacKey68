@@ -1,0 +1,16 @@
+{
+  "format": "mackey68.profile",
+  "version": 1,
+  "profile": {
+    "id": "no-caps",
+    "name": "No Caps Lock",
+    "autoFor": [],
+    "mappings": [
+      {
+        "from": "CapsLock",
+        "to": "LeftControl"
+      }
+    ]
+  },
+  "keyboard": "any standard HID keyboard"
+}

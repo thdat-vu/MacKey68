@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import SwiftUI
+import AppKit
+import UniformTypeIdentifiers
 import MacKeyKit
 
 struct BoardWindow: View {
@@ -48,6 +50,8 @@ struct BoardWindow: View {
             .labelsHidden()
             .frame(width: 200)
 
+            shareMenu
+
             Button {
                 model.openGuide()
             } label: {
@@ -72,6 +76,102 @@ struct BoardWindow: View {
             Toggle(model.t("Bật", "On"), isOn: $model.enabled)
                 .toggleStyle(.switch)
         }
+    }
+
+    /// Xuất/nhập profile và preset dùng chung.
+    private var shareMenu: some View {
+        Menu {
+            Button(model.t("Xuất profile…", "Export profile…")) { exportProfile() }
+            Button(model.t("Nhập profile…", "Import profile…")) { importProfile() }
+            Button(model.t("Nhập từ link…", "Import from link…")) { importFromLink() }
+            Divider()
+            Menu(model.t("Preset", "Presets")) {
+                ForEach(model.presets) { preset in
+                    Button(preset.title) { model.applyPreset(preset) }
+                }
+            }
+        } label: {
+            Image(systemName: "square.and.arrow.up")
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help(model.t("Chia sẻ hoặc nhập profile", "Share or import a profile"))
+    }
+
+    private func exportProfile() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.json]
+        panel.canCreateDirectories = true
+        panel.nameFieldStringValue = "mackey-\(model.activeProfile.id).json"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try model.exportData().write(to: url, options: .atomic)
+        } catch {
+            presentError(error)
+        }
+    }
+
+    private func importProfile() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            _ = try model.importProfile(fileURL: url)
+        } catch {
+            presentError(error)
+        }
+    }
+
+    private func importFromLink() {
+        let alert = NSAlert()
+        alert.messageText = model.t("Nhập profile từ link", "Import a profile from a link")
+        alert.informativeText = model.t(
+            "Dán link https tới file JSON của profile (ví dụ link raw trên GitHub).",
+            "Paste an https link to a profile JSON file (for example a GitHub raw link)."
+        )
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 380, height: 24))
+        field.placeholderString = "https://…/mackey-profile.json"
+        alert.accessoryView = field
+        alert.addButton(withTitle: model.t("Nhập", "Import"))
+        alert.addButton(withTitle: model.t("Huỷ", "Cancel"))
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+
+        let text = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: text), url.scheme?.lowercased() == "https" else {
+            presentError(ProfileTransferError.invalid(
+                model.t("Link phải bắt đầu bằng https://", "The link must start with https://")
+            ))
+            return
+        }
+
+        URLSession.shared.dataTask(with: url) { data, _, error in
+            DispatchQueue.main.async {
+                if let error {
+                    presentError(error)
+                    return
+                }
+                guard let data else {
+                    presentError(ProfileTransferError.badFormat)
+                    return
+                }
+                do {
+                    _ = try model.importProfile(data: data)
+                } catch {
+                    presentError(error)
+                }
+            }
+        }.resume()
+    }
+
+    private func presentError(_ error: Error) {
+        let alert = NSAlert()
+        alert.messageText = model.t("Không nhập/xuất được profile",
+                                    "Couldn't import/export the profile")
+        alert.informativeText = error.localizedDescription
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
 
     /// Bàn phím đang chọn + layout vẽ ra (68 / TKL / Full).
