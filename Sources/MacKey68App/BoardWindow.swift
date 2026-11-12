@@ -50,6 +50,7 @@ struct BoardWindow: View {
             .labelsHidden()
             .frame(width: 200)
 
+            profileMenu
             shareMenu
 
             Button {
@@ -76,6 +77,60 @@ struct BoardWindow: View {
             Toggle(model.t("Bật", "On"), isOn: $model.enabled)
                 .toggleStyle(.switch)
         }
+    }
+
+    private var profileMenu: some View {
+        Menu {
+            Button(model.t("Đổi tên…", "Rename…")) { renameProfile() }
+            Button(model.t("Nhân bản", "Duplicate")) {
+                model.duplicateProfile(id: model.activeProfileID)
+            }
+            Button(model.isDefaultProfile(model.activeProfileID)
+                   ? model.t("Đang là mặc định", "Default profile")
+                   : model.t("Đặt làm mặc định", "Set as default")) {
+                model.setDefaultProfile(id: model.activeProfileID)
+            }
+            .disabled(model.isDefaultProfile(model.activeProfileID))
+
+            Divider()
+
+            Button(model.t("Xoá profile…", "Delete profile…")) {
+                deleteProfile()
+            }
+            .disabled(!model.canDeleteProfile)
+        } label: {
+            Image(systemName: "ellipsis.circle")
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help(model.t("Quản lý profile", "Manage profiles"))
+    }
+
+    private func renameProfile() {
+        let profile = model.activeProfile
+        let alert = NSAlert()
+        alert.messageText = model.t("Đổi tên profile", "Rename profile")
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 320, height: 24))
+        field.stringValue = profile.name
+        alert.accessoryView = field
+        alert.addButton(withTitle: model.t("Lưu", "Save"))
+        alert.addButton(withTitle: model.t("Huỷ", "Cancel"))
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        model.renameProfile(id: profile.id, to: field.stringValue)
+    }
+
+    private func deleteProfile() {
+        let profile = model.activeProfile
+        let alert = NSAlert()
+        alert.messageText = model.t("Xoá profile “\(profile.name)”?",
+                                    "Delete profile “\(profile.name)”?")
+        alert.informativeText = model.t("Mapping của profile này sẽ mất. Không thể hoàn tác.",
+                                        "This profile's mappings will be removed. This can't be undone.")
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: model.t("Xoá", "Delete"))
+        alert.addButton(withTitle: model.t("Huỷ", "Cancel"))
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        model.deleteProfile(id: profile.id)
     }
 
     /// Xuất/nhập profile và preset dùng chung.

@@ -1,0 +1,20 @@
+{
+  "format": "mackey68.profile",
+  "version": 1,
+  "profile": {
+    "id": "caps-ctrl-swap",
+    "name": "Caps ⇄ Ctrl",
+    "autoFor": [],
+    "mappings": [
+      {
+        "from": "CapsLock",
+        "to": "LeftControl"
+      },
+      {
+        "from": "LeftControl",
+        "to": "CapsLock"
+      }
+    ]
+  },
+  "keyboard": "any standard HID keyboard"
+}

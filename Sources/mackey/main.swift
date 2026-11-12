@@ -486,6 +486,14 @@ func runSelftest() -> Never {
           "garbage profile rejected")
     check(ProfileTransfer.withUniqueID(shared, existing: [shared]).id == "share-me-2",
           "id collision gets a suffix")
+    let fallback = KeymapConfig(
+        defaultProfileID: "second",
+        profiles: [
+            Profile(id: "first", name: "First", autoFor: ["com.a."], mappings: [KeyMapping(from: "A", to: "B")]),
+            Profile(id: "second", name: "Second", mappings: [KeyMapping(from: "A", to: "B")]),
+        ]
+    )
+    check(fallback.fallbackProfile.id == "second", "explicit default profile wins")
     if let partial = try? JSONDecoder().decode(
         Profile.self,
         from: Data(#"{"name":"Minimal","mappings":[{"from":"CapsLock","to":"Escape"}]}"#.utf8)

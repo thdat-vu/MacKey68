@@ -1,0 +1,16 @@
+{
+  "format": "mackey68.profile",
+  "version": 1,
+  "profile": {
+    "id": "right-alt-cmd",
+    "name": "Right Alt = ⌘",
+    "autoFor": [],
+    "mappings": [
+      {
+        "from": "RightAlt",
+        "to": "RightGUI"
+      }
+    ]
+  },
+  "keyboard": "any standard HID keyboard"
+}

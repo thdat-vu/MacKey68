@@ -100,6 +100,8 @@ public struct KeymapConfig: Codable {
     /// Model (HID product string) of the selected keyboard, so two boards with
     /// the same VID:PID can keep separate layouts.
     public var activeModel: String?
+    /// Profile used when no app matches. Optional for old configs.
+    public var defaultProfileID: String?
     /// Every keyboard the app manages, with its own drawn layout.
     public var devices: [DeviceConfig]?
     /// Dạng cũ (một bộ mapping duy nhất). Vẫn đọc được.
@@ -110,12 +112,14 @@ public struct KeymapConfig: Codable {
     public init(name: String? = nil,
                 device: DeviceID? = nil,
                 activeModel: String? = nil,
+                defaultProfileID: String? = nil,
                 devices: [DeviceConfig]? = nil,
                 mappings: [KeyMapping]? = nil,
                 profiles: [Profile]? = nil) {
         self.name = name
         self.device = device
         self.activeModel = activeModel
+        self.defaultProfileID = defaultProfileID
         self.devices = devices
         self.mappings = mappings
         self.profiles = profiles
@@ -149,6 +153,15 @@ public struct KeymapConfig: Codable {
     }
 
     public var defaultProfile: Profile { allProfiles[0] }
+
+    /// Profile used when the frontmost app matches none.
+    public var fallbackProfile: Profile {
+        if let id = defaultProfileID,
+           let chosen = allProfiles.first(where: { $0.id == id }) {
+            return chosen
+        }
+        return allProfiles.first { $0.autoFor.isEmpty } ?? defaultProfile
+    }
 
     public func profile(matchingBundleID bundleID: String?) -> Profile? {
         guard let bundleID, !bundleID.isEmpty else { return nil }

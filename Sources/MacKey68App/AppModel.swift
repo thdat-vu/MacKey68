@@ -321,6 +321,72 @@ final class AppModel: ObservableObject {
         apply()
     }
 
+    // MARK: - Profile management
+
+    var canDeleteProfile: Bool { config.allProfiles.count > 1 }
+
+    func renameProfile(id: String, to name: String) {
+        let trimmed = String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(60))
+        guard !trimmed.isEmpty,
+              let index = config.profiles?.firstIndex(where: { $0.id == id })
+        else { return }
+        config.profiles?[index].name = trimmed
+        persist()
+    }
+
+    func duplicateProfile(id: String) {
+        guard let original = config.allProfiles.first(where: { $0.id == id }) else { return }
+        var copy = ProfileTransfer.withUniqueID(
+            Profile(id: original.id,
+                    name: original.name,
+                    autoFor: original.autoFor,
+                    mappings: original.mappings),
+            existing: config.allProfiles
+        )
+        copy.name = "\(original.name) copy"
+        // Không nhân bản rule app để tránh hai profile cùng tranh một app.
+        copy.autoFor = []
+
+        var profiles = config.allProfiles
+        let insertAt = (profiles.firstIndex(where: { $0.id == id }) ?? profiles.count - 1) + 1
+        profiles.insert(copy, at: insertAt)
+        config.profiles = profiles
+        config.mappings = nil
+        activeProfileID = copy.id
+        persist()
+        apply()
+    }
+
+    func deleteProfile(id: String) {
+        let profiles = config.allProfiles
+        guard profiles.count > 1,
+              let index = profiles.firstIndex(where: { $0.id == id })
+        else { return }
+
+        var updated = profiles
+        updated.remove(at: index)
+        config.profiles = updated
+        config.mappings = nil
+        if config.defaultProfileID == id {
+            config.defaultProfileID = nil
+        }
+        if activeProfileID == id {
+            activeProfileID = config.fallbackProfile.id
+        }
+        persist()
+        apply()
+    }
+
+    func setDefaultProfile(id: String) {
+        guard config.allProfiles.contains(where: { $0.id == id }) else { return }
+        config.defaultProfileID = id
+        persist()
+    }
+
+    func isDefaultProfile(_ id: String) -> Bool {
+        config.fallbackProfile.id == id
+    }
+
     func selectProfile(_ id: String) {
         activeProfileID = id
         apply()
@@ -329,8 +395,7 @@ final class AppModel: ObservableObject {
     /// Bundle id của app đang phía trước → đổi profile tương ứng.
     func syncProfile(with bundleID: String?) {
         let match = config.profile(matchingBundleID: bundleID)
-            ?? config.allProfiles.first { $0.autoFor.isEmpty }
-            ?? config.defaultProfile
+            ?? config.fallbackProfile
         guard match.id != activeProfileID else { return }
         activeProfileID = match.id
         apply()
@@ -678,6 +743,7 @@ final class AppModel: ObservableObject {
             name: "MacKey68",
             device: active?.device,
             activeModel: active?.model,
+            defaultProfileID: "mac",
             devices: devices,
             mappings: nil,
             profiles: [

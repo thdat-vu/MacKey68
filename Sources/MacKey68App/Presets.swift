@@ -64,5 +64,24 @@ enum Presets {
                 KeyMapping(from: "CapsLock", to: "LeftControl"),
             ]
         ),
+        ProfilePreset(
+            id: "caps-ctrl-swap",
+            title: "Caps ⇄ Ctrl",
+            detailVI: "Hoán đổi Caps Lock và Control trái.",
+            detailEN: "Swap Caps Lock and left Control.",
+            mappings: [
+                KeyMapping(from: "CapsLock", to: "LeftControl"),
+                KeyMapping(from: "LeftControl", to: "CapsLock"),
+            ]
+        ),
+        ProfilePreset(
+            id: "right-alt-cmd",
+            title: "Right Alt = ⌘",
+            detailVI: "Right Alt thành Right Command cho bàn phím thiếu ⌘ bên phải.",
+            detailEN: "Right Alt becomes Right Command for boards without a right ⌘.",
+            mappings: [
+                KeyMapping(from: "RightAlt", to: "RightGUI"),
+            ]
+        ),
     ]
 }

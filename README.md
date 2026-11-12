@@ -169,7 +169,8 @@ In that window:
 - **Auto-switch in:** each profile has a list of apps. `+ AppName` links the selected
   profile to the last used app — open that app (including games running under
   Wine/CrossOver) and the profile switches automatically. `×` unlinks.
-- Pick the profile at the top; `On` temporarily disables all remapping.
+- Pick the profile at the top; the **⋯** menu renames, duplicates, sets the default or
+  deletes a profile. `On` temporarily disables all remapping.
 - **VI / EN** on the right switches the UI language; the choice is remembered. The menu
   bar also has **Language**.
 - The menu bar has **Launch at login** — the DMG build turns it on at first launch.
@@ -577,7 +578,8 @@ Trong cửa sổ đó:
 - **Tự đổi khi mở:** mỗi profile có danh sách app. Nút `+ TênApp` gắn profile đang chọn
   với app vừa dùng — bấm vào app đó (kể cả game chạy qua Wine/CrossOver) là profile tự
   bật. Nút `×` để bỏ gắn.
-- Chọn profile ở ô trên cùng; `Bật` để tạm tắt toàn bộ remap.
+- Chọn profile ở ô trên cùng; nút **⋯** cạnh đó để đổi tên, nhân bản, đặt mặc định hoặc
+  xoá profile. `Bật` để tạm tắt toàn bộ remap.
 - Góc phải có **VI / EN** để đổi ngôn ngữ giao diện; lựa chọn được nhớ cho lần sau.
   Menu bar cũng có mục **Ngôn ngữ / Language**.
 - Menu bar có **Tự chạy khi đăng nhập / Launch at login** — bản cài bằng DMG tự bật mục
