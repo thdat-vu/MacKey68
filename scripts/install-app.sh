@@ -5,8 +5,12 @@ cd "$(dirname "$0")/.."
 
 ./scripts/build-app.sh
 
-DEST="$HOME/Applications/MacKey68.app"
-mkdir -p "$HOME/Applications"
+if [[ -w /Applications ]]; then
+    DEST="/Applications/MacKey68.app"
+else
+    DEST="$HOME/Applications/MacKey68.app"
+    mkdir -p "$HOME/Applications"
+fi
 rm -rf "$DEST"
 cp -R build/MacKey68.app "$DEST"
 

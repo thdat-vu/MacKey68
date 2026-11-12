@@ -101,7 +101,13 @@ final class AppModel: ObservableObject {
         if config.layers == nil {
             config.layers = [Layer.vimNavigation]
         }
-        if config.layersEnabled == nil {
+        if let index = config.layers?.firstIndex(where: { $0.id == "vim" }),
+           config.layers?[index].name.contains("Vim") == true {
+            config.layers?[index].name = "Caps = Navigation"
+        }
+        // Layers are opt-in per session: never auto-start after a relaunch,
+        // even if they were enabled before (beta safety).
+        if config.layersEnabled != false {
             config.layersEnabled = false
         }
         Self.migrateDevices(&config, detected: detected)
@@ -128,10 +134,6 @@ final class AppModel: ObservableObject {
         ready = true
         persist()
         apply()
-        if config.layersEnabled == true {
-            rebuildLayerEngine()
-            apply()
-        }
         noteForeign(NSWorkspace.shared.frontmostApplication)
         observeFrontmostApp()
         startWatchingDevices()
@@ -433,6 +435,61 @@ final class AppModel: ObservableObject {
     func setLayerEnabled(id: String, enabled: Bool) {
         guard let index = config.layers?.firstIndex(where: { $0.id == id }) else { return }
         config.layers?[index].enabled = enabled
+        persist()
+        apply()
+        rebuildLayerEngine()
+    }
+
+    func updateLayerTrigger(id: String, trigger: String) {
+        guard let index = config.layers?.firstIndex(where: { $0.id == id }) else { return }
+        config.layers?[index].trigger = trigger
+        persist()
+        apply()
+        rebuildLayerEngine()
+    }
+
+    func addLayerMapping(id: String, source: String, target: String = "Escape") {
+        guard let index = config.layers?.firstIndex(where: { $0.id == id }) else { return }
+        let sourceCode = KeyCodes.code(for: source)
+        var mappings = config.layers?[index].mappings ?? []
+        if let sourceCode,
+           mappings.contains(where: { KeyCodes.code(for: $0.from) == sourceCode }) {
+            return
+        }
+        mappings.append(KeyMapping(from: source, to: target))
+        config.layers?[index].mappings = mappings
+        persist()
+        apply()
+        rebuildLayerEngine()
+    }
+
+    func setLayerMapping(id: String, source: String, target: String) {
+        guard let index = config.layers?.firstIndex(where: { $0.id == id }),
+              let mappingIndex = config.layers?[index].mappings.firstIndex(where: {
+                  KeyCodes.code(for: $0.from) == KeyCodes.code(for: source)
+              })
+        else { return }
+        config.layers?[index].mappings[mappingIndex].to = target
+        persist()
+        apply()
+        rebuildLayerEngine()
+    }
+
+    func removeLayerMapping(id: String, source: String) {
+        guard let index = config.layers?.firstIndex(where: { $0.id == id }) else { return }
+        config.layers?[index].mappings.removeAll {
+            KeyCodes.code(for: $0.from) == KeyCodes.code(for: source)
+        }
+        persist()
+        apply()
+        rebuildLayerEngine()
+    }
+
+    func resetLayer(id: String) {
+        guard let index = config.layers?.firstIndex(where: { $0.id == id }) else { return }
+        let defaultLayer = Layer.vimNavigation
+        config.layers?[index].trigger = defaultLayer.trigger
+        config.layers?[index].mappings = defaultLayer.mappings
         persist()
         apply()
         rebuildLayerEngine()

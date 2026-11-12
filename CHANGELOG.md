@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.0
+
+- Layer editor: change trigger and mappings from the UI.
+- Layer renamed from "Caps = Vim navigation" to "Caps = Navigation".
+- Layers always start off when the app launches, even if they were enabled before.
+- `Edit` button, add/remove/change mapping, reset to defaults.
+
 ## 0.9.0
 
 - Layers (beta): hold Caps Lock for Vim-style navigation.

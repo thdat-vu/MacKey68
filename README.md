@@ -98,15 +98,16 @@ switching.
 ## Layers (beta)
 
 Hold **Caps Lock** to turn `IJKL` into arrow keys, `U/O` into Home/End, `Y/N` into
-Page Up/Page Down, `H` into Backspace and `M` into Return. It is **off by default**.
+Page Up/Page Down, `H` into Backspace and `M` into Return. It is **off by default and
+turns itself off when the app restarts**; enable it when you need it.
 
 - Enable from the menu bar → **Layers (beta)…** or `open "mackey68://layers"`.
 - Layers use an event tap and need **Accessibility** permission (not Input Monitoring).
 - While enabled, Caps Lock no longer types capitals and its hidutil remap is paused.
 - Emergency off: menu bar → Layers → **Turn layers off**, or
   `open "mackey68://layers-off"`.
-- The default layer lives in `layers` in the config; edit the JSON to change trigger or
-  mappings.
+- Use **Edit** next to the layer to change the trigger and mappings in the UI; the same
+  data lives in `layers` in the config.
 
 ## Three ways to get a Mac layout
 
@@ -222,7 +223,7 @@ rm -rf ~/Applications/MacKey68.app
 ./scripts/package-dmg.sh
 ```
 
-Creates `dist/MacKey68-0.9.0.dmg` with the app and an Applications shortcut to drag it
+Creates `dist/MacKey68-0.10.0.dmg` with the app and an Applications shortcut to drag it
 onto. The app registers itself as a login item on first launch, so users don't need
 Terminal.
 
@@ -239,9 +240,9 @@ To sign with Developer ID (paid Apple Developer account):
 ```bash
 MACKEY_SIGN_IDENTITY="Developer ID Application: Name (TEAMID)" ./scripts/package-dmg.sh
 # then notarize:
-xcrun notarytool submit dist/MacKey68-0.9.0.dmg \
+xcrun notarytool submit dist/MacKey68-0.10.0.dmg \
   --apple-id you@example.com --team-id TEAMID --password "$APP_PASSWORD" --wait
-xcrun stapler staple dist/MacKey68-0.9.0.dmg
+xcrun stapler staple dist/MacKey68-0.10.0.dmg
 ```
 
 The app icon is drawn in code; no source image is needed:
@@ -541,14 +542,16 @@ game.
 ## Layer (beta)
 
 Giữ **Caps Lock** để biến `IJKL` thành mũi tên, `U/O` thành Home/End, `Y/N` thành
-Page Up/Page Down, `H` thành Backspace và `M` thành Return. Mặc định **tắt**.
+Page Up/Page Down, `H` thành Backspace và `M` thành Return. Mặc định **tắt** và tự tắt
+lại mỗi khi mở app; bật khi cần dùng.
 
 - Bật từ menu bar → **Layer (beta)…** hoặc `open "mackey68://layers"`.
 - Layer dùng event tap nên cần quyền **Accessibility** (không phải Input Monitoring).
 - Khi bật, Caps Lock không còn gõ chữ hoa và mapping hidutil của Caps tạm dừng.
 - Tắt khẩn cấp: menu bar → Layers → **Tắt layer**, hoặc
   `open "mackey68://layers-off"`.
-- Layer mặc định nằm trong `layers` của config; sửa JSON để đổi trigger hoặc mapping.
+- Bấm **Chỉnh** cạnh layer để đổi trigger và mapping ngay trong app; dữ liệu vẫn nằm
+  trong `layers` của config.
 
 ## Ba tầng để "ra layout Mac"
 
@@ -665,7 +668,7 @@ rm -rf ~/Applications/MacKey68.app
 ./scripts/package-dmg.sh
 ```
 
-Tạo `dist/MacKey68-0.9.0.dmg`: mở ra có app và lối tắt Applications để kéo vào. App tự
+Tạo `dist/MacKey68-0.10.0.dmg`: mở ra có app và lối tắt Applications để kéo vào. App tự
 đăng ký chạy khi đăng nhập ở lần mở đầu tiên, nên người dùng không cần Terminal.
 
 Về Gatekeeper, có ba mức:
@@ -681,9 +684,9 @@ Về Gatekeeper, có ba mức:
 ```bash
 MACKEY_SIGN_IDENTITY="Developer ID Application: Tên (TEAMID)" ./scripts/package-dmg.sh
 # sau đó notarize:
-xcrun notarytool submit dist/MacKey68-0.9.0.dmg \
+xcrun notarytool submit dist/MacKey68-0.10.0.dmg \
   --apple-id you@example.com --team-id TEAMID --password "$APP_PASSWORD" --wait
-xcrun stapler staple dist/MacKey68-0.9.0.dmg
+xcrun stapler staple dist/MacKey68-0.10.0.dmg
 ```
 
 Icon app được vẽ bằng code, không cần file ảnh nguồn:

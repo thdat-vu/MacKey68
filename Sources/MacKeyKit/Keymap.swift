@@ -117,7 +117,7 @@ public struct Layer: Codable, Identifiable, Equatable {
     public static var vimNavigation: Layer {
         Layer(
             id: "vim",
-            name: "Caps = Vim navigation",
+            name: "Caps = Navigation",
             trigger: "CapsLock",
             enabled: true,
             mappings: [

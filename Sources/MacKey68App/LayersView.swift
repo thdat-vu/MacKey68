@@ -6,6 +6,7 @@ import MacKeyKit
 struct LayersView: View {
     @EnvironmentObject private var model: AppModel
     @Environment(\.dismiss) private var dismiss
+    @State private var editingLayer: Layer?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -48,6 +49,10 @@ struct LayersView: View {
         .padding(22)
         .frame(width: 660, height: 560)
         .background(Color(nsColor: .windowBackgroundColor))
+        .sheet(item: $editingLayer) { layer in
+            LayerEditorView(layerID: layer.id)
+                .environmentObject(model)
+        }
     }
 
     private var header: some View {
@@ -107,6 +112,12 @@ struct LayersView: View {
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
+                            Button {
+                                editingLayer = layer
+                            } label: {
+                                Label(model.t("Chỉnh", "Edit"), systemImage: "pencil")
+                            }
+                            .controlSize(.small)
                         }
 
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 6)],
