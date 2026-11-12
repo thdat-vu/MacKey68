@@ -56,7 +56,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        if link.host?.lowercased() == "lab" {
+        if link.host?.lowercased() == "lab" || link.host?.lowercased() == "test" {
             let model = AppModel.shared
             BoardWindowController.shared.show(model: model)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
@@ -162,6 +162,12 @@ struct MenuContent: View {
 
         Button(model.t("Mở bàn phím…", "Open keyboard…")) {
             BoardWindowController.shared.show(model: model)
+        }
+        Button(model.t("Test phím…", "Key Test…")) {
+            BoardWindowController.shared.show(model: model)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                model.isShowingLab = true
+            }
         }
         Button(model.t("Hướng dẫn…", "Guide…")) {
             BoardWindowController.shared.show(model: model)

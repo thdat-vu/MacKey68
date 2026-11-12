@@ -69,8 +69,8 @@ struct BoardWindow: View {
                 Image(systemName: "waveform.path.ecg")
             }
             .buttonStyle(.borderless)
-            .help(model.t("Keyboard Lab: test phím, phát hiện chatter",
-                          "Keyboard Lab: key tester and chatter detection"))
+            .help(model.t("Test phím: kiểm tra phím, phát hiện chatter",
+                          "Key Test: key tester and chatter detection"))
 
             Button {
                 model.openGuide()

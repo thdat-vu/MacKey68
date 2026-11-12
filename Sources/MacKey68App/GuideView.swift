@@ -52,8 +52,8 @@ struct GuideView: View {
                      model.t("hidutil chỉ map phím → phím. Cần Cmd+phím hoặc macro thì dùng Karabiner-Elements.",
                              "hidutil only maps key → key. For Cmd+key or macros, use Karabiner-Elements.")),
                     ("waveform.path.ecg",
-                     model.t("Keyboard Lab: bấm phím thật để chọn, xem tín hiệu và phát hiện chatter.",
-                             "Keyboard Lab: press a real key to select it, inspect reports and catch chatter.")),
+                     model.t("Test phím: bấm phím thật để chọn, xem tín hiệu và phát hiện chatter.",
+                             "Key Test: press a real key to select it, inspect reports and catch chatter.")),
                 ]
             ),
             Page(

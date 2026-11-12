@@ -9,6 +9,7 @@ struct KeyboardLabView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var learnError: String?
+    @State private var didCopyReport = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -19,6 +20,7 @@ struct KeyboardLabView: View {
                 permissionCard
             } else {
                 keyCard
+                coverageCard
                 tester
                 chatterCard
             }
@@ -27,9 +29,12 @@ struct KeyboardLabView: View {
             footer
         }
         .padding(22)
-        .frame(width: 660, height: 600)
+        .frame(width: 680, height: 680)
         .background(Color(nsColor: .windowBackgroundColor))
         .onAppear {
+            lab.onKeyDown = { usage in
+                model.markTested(model.sourceUsage(forReportedUsage: usage))
+            }
             lab.onLearn = { usage in
                 if onSelectKey(usage) {
                     dismiss()
@@ -57,7 +62,7 @@ struct KeyboardLabView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Keyboard Lab")
+                Text(model.t("Test phím", "Key Test"))
                     .font(.title3.weight(.semibold))
                 HStack(spacing: 6) {
                     Circle()
@@ -113,6 +118,45 @@ struct KeyboardLabView: View {
             .fill(Color.primary.opacity(0.04)))
     }
 
+    private var coverageCard: some View {
+        let total = model.testableUsages.count
+        let done = model.testedKeyCount
+        let untested = model.untestedUsages
+        let names = untested.prefix(12).map { Display.label(for: $0) }.joined(separator: ", ")
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(model.t("Phủ phím", "Key coverage"))
+                    .font(.headline)
+                Spacer()
+                Text("\(done)/\(total)")
+                    .font(.callout.monospacedDigit())
+                    .foregroundStyle(done == total && total > 0 ? Color.green : Color.secondary)
+                Button(model.t("Đặt lại", "Reset")) {
+                    model.resetTestCoverage()
+                }
+                .controlSize(.small)
+                .disabled(done == 0)
+            }
+
+            ProgressView(value: total == 0 ? 0 : Double(done) / Double(total))
+
+            if !untested.isEmpty {
+                Text(model.t("Chưa bấm: ", "Not pressed: ") + names
+                     + (untested.count > 12 ? " +\(untested.count - 12)" : ""))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            } else if total > 0 {
+                Label(model.t("Đã bấm đủ phím trên layout.",
+                              "All keys on this layout have been pressed."),
+                      systemImage: "checkmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.green)
+            }
+        }
+    }
+
     private var tester: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -156,9 +200,21 @@ struct KeyboardLabView: View {
                                   : "arrow.up.circle")
                                 .foregroundStyle(event.pressed ? Color.accentColor : .secondary)
                                 .font(.caption)
-                            Text(event.name)
+                            let names = mappedNames(for: event.usage)
+                            Text(names.source)
                                 .font(.system(.callout, design: .monospaced))
-                                .frame(width: 140, alignment: .leading)
+                                .frame(width: 110, alignment: .leading)
+                            if let target = names.target {
+                                Image(systemName: "arrow.right")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                Text(target)
+                                    .font(.system(.callout, design: .monospaced))
+                                    .foregroundStyle(Color.accentColor)
+                                    .frame(width: 90, alignment: .leading)
+                            } else {
+                                Color.clear.frame(width: 104, height: 1)
+                            }
                             Text(String(format: "0x%02X", event.usage))
                                 .font(.caption.monospaced())
                                 .foregroundStyle(.secondary)
@@ -174,11 +230,24 @@ struct KeyboardLabView: View {
                     }
                 }
             }
-            .frame(height: 170)
+            .frame(height: 140)
             .padding(8)
             .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(Color.primary.opacity(0.035)))
         }
+    }
+
+    private func mappedNames(for usage: UInt32) -> (source: String, target: String?) {
+        let sourceUsage = model.sourceUsage(forReportedUsage: usage)
+        let source = KeyCodes.name(for: sourceUsage)
+            ?? String(format: "0x%02X", sourceUsage)
+        if let targetUsage = model.activeProfile.destination(for: sourceUsage),
+           targetUsage != sourceUsage {
+            let target = KeyCodes.name(for: targetUsage)
+                ?? String(format: "0x%02X", targetUsage)
+            return (source, target)
+        }
+        return (source, nil)
     }
 
     private var chatterCard: some View {
@@ -243,14 +312,60 @@ struct KeyboardLabView: View {
                 learnError = nil
             }
             .disabled(lab.events.isEmpty)
+            Button(didCopyReport
+                   ? model.t("Đã copy", "Copied")
+                   : model.t("Sao chép báo cáo", "Copy report")) {
+                copyReport()
+            }
             Spacer()
-            Text(model.t("Lab chỉ đọc phím, không thay đổi mapping.",
-                         "The lab only reads keys; it does not change mappings."))
+            Text(model.t("Chỉ đọc phím khi Lab mở.",
+                         "Only reads keys while the lab is open."))
                 .font(.caption)
                 .foregroundStyle(.tertiary)
             Spacer()
             Button(model.t("Đóng", "Close")) { dismiss() }
                 .keyboardShortcut(.cancelAction)
+        }
+    }
+
+    private func copyReport() {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        var lines: [String] = []
+        lines.append("MacKey68 \(version) — Key Test report")
+        lines.append("macOS: \(ProcessInfo.processInfo.operatingSystemVersionString)")
+        lines.append("Keyboard: \(model.config.activeModel ?? model.config.device?.description ?? "-")")
+        lines.append("Layout: \(model.layoutID.shortName) — \(model.layout.name)")
+        lines.append("Profile: \(model.activeProfile.name) (\(model.activeProfile.id))")
+        lines.append("Mappings:")
+        for mapping in model.activeProfile.mappings {
+            lines.append("  \(mapping.from) -> \(mapping.to)")
+        }
+        lines.append("Coverage: \(model.testedKeyCount)/\(model.testableUsages.count)")
+        let untested = model.untestedUsages
+            .map { KeyCodes.name(for: $0) ?? String(format: "0x%02X", $0) }
+        if !untested.isEmpty {
+            lines.append("Untested: \(untested.joined(separator: ", "))")
+        }
+        if lab.chatter.isEmpty {
+            lines.append("Chatter: none (50 ms threshold)")
+        } else {
+            lines.append("Chatter:")
+            for (usage, count) in lab.chatter.sorted(by: { $0.value > $1.value }) {
+                let name = KeyCodes.name(for: usage) ?? String(format: "0x%02X", usage)
+                lines.append("  \(name) ×\(count)")
+            }
+        }
+        lines.append("Recent events:")
+        for event in lab.events {
+            let delta = event.delta.map { String(format: "%.0f ms", $0 * 1000) } ?? "-"
+            lines.append("  \(event.pressed ? "down" : "up  ") \(event.name) 0x\(String(format: "%02X", event.usage)) \(delta)")
+        }
+
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(lines.joined(separator: "\n"), forType: .string)
+        didCopyReport = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            didCopyReport = false
         }
     }
 

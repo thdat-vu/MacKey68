@@ -37,6 +37,8 @@ final class KeyLab: ObservableObject {
 
     /// Called when learn mode captures a key down.
     var onLearn: ((UInt32) -> Void)?
+    /// Called for every key down, for coverage tracking.
+    var onKeyDown: ((UInt32) -> Void)?
 
     private var monitor: KeyMonitor?
     private var lastDown: [UInt32: TimeInterval] = [:]
@@ -101,6 +103,7 @@ final class KeyLab: ObservableObject {
             }
             lastDown[event.usage] = event.timestamp
             lastKey = item
+            onKeyDown?(event.usage)
 
             if learnMode {
                 learnMode = false

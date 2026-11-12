@@ -82,6 +82,7 @@ struct KeyCapView: View {
     let unit: CGFloat
     let destination: UInt32?
     let isSelected: Bool
+    let isTested: Bool
     let fnHelp: String
     let action: () -> Void
 
@@ -148,6 +149,14 @@ struct KeyCapView: View {
                     .padding(.horizontal, 2)
                     .offset(y: changed ? unit * 0.07 : 0)
             }
+            .overlay(alignment: .topTrailing) {
+                if isTested && key.isRemappable {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: max(7, unit * 0.16), weight: .bold))
+                        .foregroundStyle(.green)
+                        .padding(3)
+                }
+            }
         }
         .buttonStyle(.plain)
         .frame(width: max(18, key.width * unit - 5), height: unit * 0.92)
@@ -186,6 +195,7 @@ struct BoardView: View {
                                             unit: unit,
                                             destination: model.destination(for: key),
                                             isSelected: model.selectedKey?.id == key.id,
+                                            isTested: model.testedUsages.contains(key.usage),
                                             fnHelp: model.t("Fn do firmware giữ, không remap được",
                                                             "Fn is handled by firmware and can't be remapped")
                                         ) {

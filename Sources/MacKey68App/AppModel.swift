@@ -59,6 +59,8 @@ final class AppModel: ObservableObject {
     @Published var isShowingGuide = false
     /// Keyboard Lab (key tester / select by pressing).
     @Published var isShowingLab = false
+    /// Keys the user has pressed while testing the current layout.
+    @Published private(set) var testedUsages: Set<UInt32> = []
 
     /// Bật/tắt toàn bộ remap.
     @Published var enabled: Bool = true {
@@ -188,6 +190,7 @@ final class AppModel: ObservableObject {
             ]
         }
         selectedKey = nil
+        testedUsages.removeAll()
         persist()
         apply()
     }
@@ -208,6 +211,7 @@ final class AppModel: ObservableObject {
         }
         config.devices = devices
         selectedKey = nil
+        testedUsages.removeAll()
         persist()
     }
 
@@ -552,6 +556,29 @@ final class AppModel: ObservableObject {
             return source
         }
         return usage
+    }
+
+    // MARK: - Key test coverage
+
+    var testableUsages: Set<UInt32> {
+        Set(layout.keys.filter(\.isRemappable).map(\.usage))
+    }
+
+    var testedKeyCount: Int {
+        testedUsages.intersection(testableUsages).count
+    }
+
+    var untestedUsages: [UInt32] {
+        testableUsages.subtracting(testedUsages).sorted()
+    }
+
+    func markTested(_ usage: UInt32) {
+        guard usage != 0 else { return }
+        testedUsages.insert(usage)
+    }
+
+    func resetTestCoverage() {
+        testedUsages.removeAll()
     }
 
     func setMapping(source: UInt32, to destination: UInt32?) {

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0
+
+- Renamed Keyboard Lab to **Key Test** / **Test phím**.
+- Coverage test: progress, untested key list, green checkmarks on the board.
+- Tester shows the physical key and the mapped result.
+- Copy diagnostic report (version, keyboard, layout, profile, coverage, chatter, events).
+- Menu bar item and `mackey68://test` shortcut.
+
 ## 0.7.0
 
 - Keyboard Lab: press a real key to select it on the board.

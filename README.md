@@ -179,9 +179,9 @@ In that window:
   recommended for seamless updates.
 - The first launch shows a 4-step guide. Reopen it from the menu bar → **Guide…** or the
   **?** button in the window.
-- **Keyboard Lab** (waveform icon): press a real key to select it, watch live HID reports
+- **Key Test** (waveform icon): press a real key to select it, watch live HID reports
   and detect chatter (two key-downs within 50 ms). Requires Input Monitoring.
-- `open "mackey68://lab"` opens the board and the lab in one go.
+- `open "mackey68://test"` opens the board and the lab in one go.
 
 Default profiles:
 
@@ -207,7 +207,7 @@ rm -rf ~/Applications/MacKey68.app
 ./scripts/package-dmg.sh
 ```
 
-Creates `dist/MacKey68-0.7.0.dmg` with the app and an Applications shortcut to drag it
+Creates `dist/MacKey68-0.8.0.dmg` with the app and an Applications shortcut to drag it
 onto. The app registers itself as a login item on first launch, so users don't need
 Terminal.
 
@@ -224,9 +224,9 @@ To sign with Developer ID (paid Apple Developer account):
 ```bash
 MACKEY_SIGN_IDENTITY="Developer ID Application: Name (TEAMID)" ./scripts/package-dmg.sh
 # then notarize:
-xcrun notarytool submit dist/MacKey68-0.7.0.dmg \
+xcrun notarytool submit dist/MacKey68-0.8.0.dmg \
   --apple-id you@example.com --team-id TEAMID --password "$APP_PASSWORD" --wait
-xcrun stapler staple dist/MacKey68-0.7.0.dmg
+xcrun stapler staple dist/MacKey68-0.8.0.dmg
 ```
 
 The app icon is drawn in code; no source image is needed:
@@ -332,12 +332,12 @@ Key names accept common spellings: `Cmd`, `Command`, `Win`, `Opt`, `Option`, `Al
   aren't drawn; pick the closest layout.
 - 60%, 75% and 96% boards use the closest drawing (68 or TKL). Their mappings still work
   — only the picture has a few extra/missing caps.
-- Keyboard Lab needs Input Monitoring. Ad-hoc builds may ask again after an update;
+- Key Test needs Input Monitoring. Ad-hoc builds may ask again after an update;
   Developer ID signing keeps that permission stable.
 
 ### Troubleshooting
 
-**Keyboard Lab says Input Monitoring denied.** Open System Settings → Privacy &
+**Key Test says Input Monitoring denied.** Open System Settings → Privacy &
 Security → Input Monitoring, click **+**, press ⌘⇧G and paste the app path (the Lab has a
 **Copy app path** button). Then turn MacKey68 on and press Retry. Ad-hoc builds may need
 this again after an update; Developer ID signing keeps the permission stable.
@@ -604,9 +604,9 @@ Trong cửa sổ đó:
   ad-hoc vẫn có thể bị Gatekeeper chặn; nên ký Developer ID + notarize để cập nhật mượt.
 - Lần đầu mở có popup hướng dẫn 4 bước. Mở lại bằng menu bar → **Hướng dẫn…** hoặc nút
   **?** trong cửa sổ.
-- **Keyboard Lab** (icon sóng): bấm phím thật để chọn, xem tín hiệu HID trực tiếp và phát
+- **Test phím** (icon sóng): bấm phím thật để chọn, xem tín hiệu HID trực tiếp và phát
   hiện chatter (hai lần nhấn trong 50 ms). Cần quyền Input Monitoring.
-- `open "mackey68://lab"` mở thẳng bàn phím + Lab.
+- `open "mackey68://test"` mở thẳng bàn phím + Lab.
 
 Mặc định có hai profile:
 
@@ -632,7 +632,7 @@ rm -rf ~/Applications/MacKey68.app
 ./scripts/package-dmg.sh
 ```
 
-Tạo `dist/MacKey68-0.7.0.dmg`: mở ra có app và lối tắt Applications để kéo vào. App tự
+Tạo `dist/MacKey68-0.8.0.dmg`: mở ra có app và lối tắt Applications để kéo vào. App tự
 đăng ký chạy khi đăng nhập ở lần mở đầu tiên, nên người dùng không cần Terminal.
 
 Về Gatekeeper, có ba mức:
@@ -648,9 +648,9 @@ Về Gatekeeper, có ba mức:
 ```bash
 MACKEY_SIGN_IDENTITY="Developer ID Application: Tên (TEAMID)" ./scripts/package-dmg.sh
 # sau đó notarize:
-xcrun notarytool submit dist/MacKey68-0.7.0.dmg \
+xcrun notarytool submit dist/MacKey68-0.8.0.dmg \
   --apple-id you@example.com --team-id TEAMID --password "$APP_PASSWORD" --wait
-xcrun stapler staple dist/MacKey68-0.7.0.dmg
+xcrun stapler staple dist/MacKey68-0.8.0.dmg
 ```
 
 Icon app được vẽ bằng code, không cần file ảnh nguồn:
@@ -753,12 +753,12 @@ Tên phím chấp nhận cả cách viết thường dùng: `Cmd`, `Command`, `W
   không vẽ đúng hình; chọn layout gần nhất.
 - Board 60%, 75% và 96% dùng hình gần nhất (68 hoặc TKL). Mapping vẫn đúng, chỉ hình vẽ
   thừa/thiếu vài phím.
-- Keyboard Lab cần Input Monitoring. Bản ad-hoc có thể phải cấp lại sau mỗi lần update;
+- Test phím cần Input Monitoring. Bản ad-hoc có thể phải cấp lại sau mỗi lần update;
   ký Developer ID sẽ giữ quyền ổn định hơn.
 
 ### Xử lý sự cố
 
-**Keyboard Lab báo thiếu Input Monitoring.** Mở System Settings → Privacy & Security →
+**Test phím báo thiếu Input Monitoring.** Mở System Settings → Privacy & Security →
 Input Monitoring, bấm **+**, nhấn ⌘⇧G rồi dán đường dẫn app (nút **Sao chép đường dẫn
 app** trong Lab). Bật MacKey68 rồi bấm Thử lại. Bản ad-hoc có thể phải làm lại sau mỗi
 lần update; ký Developer ID sẽ giữ quyền ổn định.
