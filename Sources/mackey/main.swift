@@ -486,6 +486,15 @@ func runSelftest() -> Never {
           "garbage profile rejected")
     check(ProfileTransfer.withUniqueID(shared, existing: [shared]).id == "share-me-2",
           "id collision gets a suffix")
+    if let partial = try? JSONDecoder().decode(
+        Profile.self,
+        from: Data(#"{"name":"Minimal","mappings":[{"from":"CapsLock","to":"Escape"}]}"#.utf8)
+    ) {
+        check(partial.autoFor.isEmpty && partial.id == "profile",
+              "hand-written profile without autoFor/id loads")
+    } else {
+        check(false, "hand-written profile without autoFor/id loads")
+    }
     let k68 = Layouts.layout(for: .k68)
     check(k68.keys.first { $0.usage == 0x39 }?.label == "caps", "K68 caps key present")
     let full = Layouts.layout(for: .full)

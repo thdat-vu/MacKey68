@@ -189,6 +189,19 @@ public struct Profile: Codable, Identifiable, Equatable {
         self.mappings = mappings
     }
 
+    private enum CodingKeys: String, CodingKey {
+        case id, name, autoFor, mappings
+    }
+
+    /// Chấp nhận file chia sẻ viết tay thiếu `autoFor` hoặc `mappings`.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(String.self, forKey: .id) ?? "profile"
+        name = try container.decodeIfPresent(String.self, forKey: .name) ?? "Profile"
+        autoFor = try container.decodeIfPresent([String].self, forKey: .autoFor) ?? []
+        mappings = try container.decodeIfPresent([KeyMapping].self, forKey: .mappings) ?? []
+    }
+
     public func destination(for source: UInt32) -> UInt32? {
         for mapping in mappings {
             guard let src = KeyCodes.code(for: mapping.from), src == source,
