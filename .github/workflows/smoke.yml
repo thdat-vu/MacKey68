@@ -2,6 +2,6 @@ name: Smoke
 on: workflow_dispatch
 jobs:
   smoke:
-    runs-on: ubuntu-latest
+    runs-on: macos-15
     steps:
       - run: echo hello
