@@ -95,7 +95,7 @@ managed, and the drawn board adapts to one of three layouts:
 Profiles carry their `autoFor` app rules, so a shared League profile keeps its automatic
 switching.
 
-## Layers (beta)
+## Layers & combos (beta)
 
 Hold **Caps Lock** to turn `IJKL` into arrow keys, `U/O` into Home/End, `Y/N` into
 Page Up/Page Down, `H` into Backspace and `M` into Return. It is **off by default and
@@ -108,6 +108,9 @@ turns itself off when the app restarts**; enable it when you need it.
   `open "mackey68://layers-off"`.
 - Use **Edit** next to the layer to change the trigger and mappings in the UI; the same
   data lives in `layers` in the config.
+- **Combos** (same sheet): modifier + key → another key, e.g. `⌃⌥ + H → LeftArrow`.
+  Add a combo, choose modifiers with the ⌃⌥⇧⌘ buttons, then pick From/To keys.
+  Combos also start off after a relaunch and need Accessibility.
 
 ## Three ways to get a Mac layout
 
@@ -223,7 +226,7 @@ rm -rf ~/Applications/MacKey68.app
 ./scripts/package-dmg.sh
 ```
 
-Creates `dist/MacKey68-0.10.0.dmg` with the app and an Applications shortcut to drag it
+Creates `dist/MacKey68-0.11.0.dmg` with the app and an Applications shortcut to drag it
 onto. The app registers itself as a login item on first launch, so users don't need
 Terminal.
 
@@ -240,9 +243,9 @@ To sign with Developer ID (paid Apple Developer account):
 ```bash
 MACKEY_SIGN_IDENTITY="Developer ID Application: Name (TEAMID)" ./scripts/package-dmg.sh
 # then notarize:
-xcrun notarytool submit dist/MacKey68-0.10.0.dmg \
+xcrun notarytool submit dist/MacKey68-0.11.0.dmg \
   --apple-id you@example.com --team-id TEAMID --password "$APP_PASSWORD" --wait
-xcrun stapler staple dist/MacKey68-0.10.0.dmg
+xcrun stapler staple dist/MacKey68-0.11.0.dmg
 ```
 
 The app icon is drawn in code; no source image is needed:
@@ -325,8 +328,9 @@ really sends.
 - `autoFor`: bundle ids that auto-activate the profile. Matched **exactly or by
   prefix**, so `com.riotgames.` matches every Riot bundle. A profile with an empty
   `autoFor` is the fallback when nothing matches.
-- `layers` / `layersEnabled`: hold-to-activate layers. Each layer has a `trigger`, an
-  `enabled` flag and `mappings`; the master switch defaults to off.
+- `layers` / `layersEnabled` / `combos` / `combosEnabled`: event-tap features. Layers
+  have a `trigger`, `enabled` and `mappings`; combos have `modifiers`, `from`, `to`.
+  Both master switches default to off.
 - The older `mappings`-only format still loads and is upgraded to a `default` profile.
 - The app rewrites this config whenever you change a key, a layout or link an app;
   after editing by hand, reopen the app (or click **Reapply** in the menu).
@@ -539,7 +543,7 @@ bàn phím vẽ ra tự đổi theo một trong ba layout:
 Profile mang theo rule `autoFor`, nên profile League được chia sẻ vẫn tự chuyển khi mở
 game.
 
-## Layer (beta)
+## Layer & combo (beta)
 
 Giữ **Caps Lock** để biến `IJKL` thành mũi tên, `U/O` thành Home/End, `Y/N` thành
 Page Up/Page Down, `H` thành Backspace và `M` thành Return. Mặc định **tắt** và tự tắt
@@ -552,6 +556,9 @@ lại mỗi khi mở app; bật khi cần dùng.
   `open "mackey68://layers-off"`.
 - Bấm **Chỉnh** cạnh layer để đổi trigger và mapping ngay trong app; dữ liệu vẫn nằm
   trong `layers` của config.
+- **Combo** (cùng cửa sổ): modifier + phím → phím khác, ví dụ `⌃⌥ + H → LeftArrow`.
+  Bấm Thêm combo, chọn modifier bằng nút ⌃⌥⇧⌘ rồi chọn Từ/Thành. Combo cũng tắt sau
+  khi mở lại app và cần quyền Accessibility.
 
 ## Ba tầng để "ra layout Mac"
 
@@ -668,7 +675,7 @@ rm -rf ~/Applications/MacKey68.app
 ./scripts/package-dmg.sh
 ```
 
-Tạo `dist/MacKey68-0.10.0.dmg`: mở ra có app và lối tắt Applications để kéo vào. App tự
+Tạo `dist/MacKey68-0.11.0.dmg`: mở ra có app và lối tắt Applications để kéo vào. App tự
 đăng ký chạy khi đăng nhập ở lần mở đầu tiên, nên người dùng không cần Terminal.
 
 Về Gatekeeper, có ba mức:
@@ -684,9 +691,9 @@ Về Gatekeeper, có ba mức:
 ```bash
 MACKEY_SIGN_IDENTITY="Developer ID Application: Tên (TEAMID)" ./scripts/package-dmg.sh
 # sau đó notarize:
-xcrun notarytool submit dist/MacKey68-0.10.0.dmg \
+xcrun notarytool submit dist/MacKey68-0.11.0.dmg \
   --apple-id you@example.com --team-id TEAMID --password "$APP_PASSWORD" --wait
-xcrun stapler staple dist/MacKey68-0.10.0.dmg
+xcrun stapler staple dist/MacKey68-0.11.0.dmg
 ```
 
 Icon app được vẽ bằng code, không cần file ảnh nguồn:
@@ -767,8 +774,9 @@ Input Monitoring → bật cho Terminal). Đây là công cụ để dò xem `Fn
 - `autoFor`: bundle id của app mà profile tự bật. So khớp **chính xác hoặc theo tiền
   tố**, nên `com.riotgames.` bắt mọi bundle của Riot. Profile có `autoFor` rỗng là
   profile mặc định khi không app nào khớp.
-- `layers` / `layersEnabled`: layer giữ phím. Mỗi layer có `trigger`, `enabled` và
-  `mappings`; công tắc tổng mặc định tắt.
+- `layers` / `layersEnabled` / `combos` / `combosEnabled`: tính năng event tap. Layer có
+  `trigger`, `enabled`, `mappings`; combo có `modifiers`, `from`, `to`. Cả hai công tắc
+  tổng mặc định tắt.
 - Dạng cũ chỉ có `mappings` vẫn đọc được và được nâng thành một profile `default`.
 - App ghi config này mỗi khi bạn đổi phím, đổi layout hoặc gắn app, nên sửa tay xong chỉ
   cần mở lại app (hoặc bấm **Áp dụng lại** trên menu).

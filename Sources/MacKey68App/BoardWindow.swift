@@ -124,7 +124,7 @@ struct BoardWindow: View {
 
             Divider()
 
-            Button(model.t("Layer (beta)…", "Layers (beta)…")) {
+            Button(model.t("Layer & combo (beta)…", "Layers & combos (beta)…")) {
                 model.isShowingLayers = true
             }
         } label: {

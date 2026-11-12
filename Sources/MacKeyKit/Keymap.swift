@@ -93,6 +93,43 @@ public struct DeviceConfig: Codable, Equatable, Identifiable {
     }
 }
 
+/// A modifier + key shortcut handled by the event tap, e.g. Ctrl+Option+H.
+public struct Combo: Codable, Identifiable, Equatable {
+    public var id: String
+    public var name: String
+    public var enabled: Bool
+    /// "control", "option", "shift", "command"
+    public var modifiers: [String]
+    public var from: String
+    public var to: String
+
+    public init(id: String,
+                name: String,
+                enabled: Bool = true,
+                modifiers: [String],
+                from: String,
+                to: String) {
+        self.id = id
+        self.name = name
+        self.enabled = enabled
+        self.modifiers = modifiers
+        self.from = from
+        self.to = to
+    }
+
+    public var modifierSummary: String {
+        modifiers.map { modifier in
+            switch modifier.lowercased() {
+            case "control", "ctrl": return "⌃"
+            case "option", "alt": return "⌥"
+            case "shift": return "⇧"
+            case "command", "cmd": return "⌘"
+            default: return modifier
+            }
+        }.joined()
+    }
+}
+
 /// A hold-to-activate layer handled by the event tap (not hidutil).
 public struct Layer: Codable, Identifiable, Equatable {
     public var id: String
@@ -151,6 +188,10 @@ public struct KeymapConfig: Codable {
     public var layers: [Layer]?
     /// Master switch for the event-tap layers.
     public var layersEnabled: Bool?
+    /// Modifier + key shortcuts handled by the same event tap.
+    public var combos: [Combo]?
+    /// Master switch for combos.
+    public var combosEnabled: Bool?
     /// Dạng cũ (một bộ mapping duy nhất). Vẫn đọc được.
     public var mappings: [KeyMapping]?
     /// Nhiều bộ mapping, có thể gắn với app để tự chuyển.
@@ -163,6 +204,8 @@ public struct KeymapConfig: Codable {
                 devices: [DeviceConfig]? = nil,
                 layers: [Layer]? = nil,
                 layersEnabled: Bool? = nil,
+                combos: [Combo]? = nil,
+                combosEnabled: Bool? = nil,
                 mappings: [KeyMapping]? = nil,
                 profiles: [Profile]? = nil) {
         self.name = name
@@ -172,6 +215,8 @@ public struct KeymapConfig: Codable {
         self.devices = devices
         self.layers = layers
         self.layersEnabled = layersEnabled
+        self.combos = combos
+        self.combosEnabled = combosEnabled
         self.mappings = mappings
         self.profiles = profiles
     }

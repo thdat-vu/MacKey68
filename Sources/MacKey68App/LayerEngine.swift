@@ -4,15 +4,24 @@ import CoreGraphics
 import ApplicationServices
 import MacKeyKit
 
+struct ComboRule {
+    var keyCode: Int64
+    var modifiers: CGEventFlags
+    var target: Int64
+}
+
 struct LayerRules {
     var triggerKeyCodes: Set<Int64> = []
     var mappings: [Int64: Int64] = [:]
+    var combos: [ComboRule] = []
     /// Reported name (after hidutil) → physical name, lowercased.
     var inverseProfile: [String: String] = [:]
 
-    var isEmpty: Bool { triggerKeyCodes.isEmpty || mappings.isEmpty }
+    var isEmpty: Bool {
+        combos.isEmpty && (triggerKeyCodes.isEmpty || mappings.isEmpty)
+    }
 
-    static func build(layers: [Layer], profile: Profile) -> LayerRules {
+    static func build(layers: [Layer], combos: [Combo], profile: Profile) -> LayerRules {
         var rules = LayerRules()
 
         func normalized(_ name: String) -> String {
@@ -42,6 +51,30 @@ struct LayerRules {
             }
         }
 
+        for combo in combos where combo.enabled {
+            let physical = normalized(combo.from)
+            let reportedName = profile.mappings.first {
+                normalized($0.from) == physical
+            }?.to ?? combo.from
+            guard let source = MacKeyCodes.code(for: reportedName),
+                  let target = MacKeyCodes.code(for: combo.to) else { continue }
+
+            var flags: CGEventFlags = []
+            for modifier in combo.modifiers {
+                switch modifier.lowercased() {
+                case "control", "ctrl": flags.insert(.maskControl)
+                case "option", "alt": flags.insert(.maskAlternate)
+                case "shift": flags.insert(.maskShift)
+                case "command", "cmd": flags.insert(.maskCommand)
+                default: break
+                }
+            }
+            guard !flags.isEmpty else { continue }
+            rules.combos.append(ComboRule(keyCode: Int64(source),
+                                          modifiers: flags,
+                                          target: Int64(target)))
+        }
+
         return rules
     }
 }
@@ -57,6 +90,9 @@ final class LayerEngine: @unchecked Sendable {
     }
 
     private static let magic: Int64 = 0x4D_4B_36_38 // "MK68"
+    private static let comboMask: CGEventFlags = [
+        .maskControl, .maskShift, .maskAlternate, .maskCommand,
+    ]
 
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
@@ -157,6 +193,20 @@ final class LayerEngine: @unchecked Sendable {
 
         let code = event.getIntegerValueField(.keyboardEventKeycode)
 
+        if type == .keyDown {
+            let flags = event.flags.intersection(Self.comboMask)
+            if let combo = rules.combos.first(where: {
+                $0.keyCode == code && $0.modifiers == flags
+            }) {
+                lock.lock()
+                translations[code] = combo.target
+                lock.unlock()
+                let outputFlags = event.flags.subtracting(combo.modifiers)
+                return synthetic(target: combo.target, from: event,
+                                 down: true, flags: outputFlags)
+            }
+        }
+
         if rules.triggerKeyCodes.contains(code) {
             if type == .flagsChanged {
                 let next = event.flags.contains(.maskAlphaShift)
@@ -201,13 +251,16 @@ final class LayerEngine: @unchecked Sendable {
         return translations[code]
     }
 
-    private func synthetic(target: Int64, from event: CGEvent, down: Bool) -> Unmanaged<CGEvent>? {
+    private func synthetic(target: Int64,
+                           from event: CGEvent,
+                           down: Bool,
+                           flags: CGEventFlags? = nil) -> Unmanaged<CGEvent>? {
         guard let new = CGEvent(keyboardEventSource: nil,
                                 virtualKey: CGKeyCode(target),
                                 keyDown: down) else {
             return nil
         }
-        new.flags = event.flags
+        new.flags = flags ?? event.flags
         new.setIntegerValueField(
             .keyboardEventAutorepeat,
             value: event.getIntegerValueField(.keyboardEventAutorepeat)

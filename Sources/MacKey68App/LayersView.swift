@@ -7,6 +7,7 @@ struct LayersView: View {
     @EnvironmentObject private var model: AppModel
     @Environment(\.dismiss) private var dismiss
     @State private var editingLayer: Layer?
+    @State private var editingCombo: Combo?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -47,7 +48,7 @@ struct LayersView: View {
             footer
         }
         .padding(22)
-        .frame(width: 660, height: 560)
+        .frame(width: 700, height: 700)
         .background(Color(nsColor: .windowBackgroundColor))
         .sheet(item: $editingLayer) { layer in
             LayerEditorView(layerID: layer.id)
@@ -67,7 +68,7 @@ struct LayersView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(model.t("Layer (beta)", "Layers (beta)"))
+                Text(model.t("Layer & combo (beta)", "Layers & combos (beta)"))
                     .font(.title3.weight(.semibold))
                 HStack(spacing: 6) {
                     Circle()
@@ -136,7 +137,81 @@ struct LayersView: View {
                     .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(Color.primary.opacity(0.035)))
                 }
+
+                Divider()
+                combosSection
             }
+        }
+    }
+
+    private var combosSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Combos").font(.headline)
+                Spacer()
+                Button(model.combosEnabled
+                       ? model.t("Tắt combo", "Turn combos off")
+                       : model.t("Bật combo", "Turn combos on")) {
+                    model.setCombosEnabled(!model.combosEnabled)
+                }
+                .controlSize(.small)
+                Button {
+                    let id = model.addCombo()
+                    editingCombo = model.combos.first { $0.id == id }
+                } label: {
+                    Label(model.t("Thêm combo", "Add combo"), systemImage: "plus")
+                }
+                .controlSize(.small)
+            }
+
+            Text(model.t("Modifier + phím → phím khác. Ví dụ ⌃⌥ + H → LeftArrow.",
+                         "Modifier + key → another key. Example ⌃⌥ + H → LeftArrow."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if model.combos.isEmpty {
+                Text(model.t("Chưa có combo nào.", "No combos yet."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
+            ForEach(model.combos) { combo in
+                HStack(spacing: 10) {
+                    Button {
+                        model.setComboEnabled(id: combo.id, enabled: !combo.enabled)
+                    } label: {
+                        Image(systemName: combo.enabled ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(combo.enabled ? Color.accentColor : .secondary)
+                    }
+                    .buttonStyle(.borderless)
+
+                    Text("\(combo.modifierSummary) + \(combo.from)  →  \(combo.to)")
+                        .font(.system(.callout, design: .monospaced))
+                    Spacer()
+                    Button {
+                        editingCombo = combo
+                    } label: {
+                        Image(systemName: "pencil")
+                    }
+                    .buttonStyle(.borderless)
+                    Button {
+                        model.deleteCombo(id: combo.id)
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.primary.opacity(0.04)))
+            }
+        }
+        .padding(.top, 4)
+        .sheet(item: $editingCombo) { combo in
+            ComboEditorView(comboID: combo.id)
+                .environmentObject(model)
         }
     }
 

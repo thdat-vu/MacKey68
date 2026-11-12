@@ -196,7 +196,7 @@ struct MenuContent: View {
                 model.isShowingLab = true
             }
         }
-        Button(model.t("Layer (beta)…", "Layers (beta)…")) {
+        Button(model.t("Layer & combo (beta)…", "Layers & combos (beta)…")) {
             BoardWindowController.shared.show(model: model)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 model.isShowingLayers = true

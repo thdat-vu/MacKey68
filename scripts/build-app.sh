@@ -36,8 +36,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleExecutable</key>      <string>MacKey68</string>
     <key>CFBundlePackageType</key>     <string>APPL</string>
     <key>CFBundleIconFile</key>        <string>AppIcon</string>
-    <key>CFBundleShortVersionString</key> <string>0.10.0</string>
-    <key>CFBundleVersion</key>         <string>1000</string>
+    <key>CFBundleShortVersionString</key> <string>0.11.0</string>
+    <key>CFBundleVersion</key>         <string>1100</string>
     <key>NSHumanReadableCopyright</key>
     <string>Copyright © 2026 Vu Thanh Dat. Independent project; not affiliated with keyboard vendors. GPL-3.0-or-later.</string>
     <key>LSMinimumSystemVersion</key>  <string>13.0</string>

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.11.0
+
+- Combos: modifier + key → another key (e.g. ⌃⌥ + H → LeftArrow).
+- Combo editor with modifier toggles and From/To key pickers.
+- Separate master switches for layers and combos; both start off after relaunch.
+- Combo engine shares the existing event tap and Accessibility permission.
+
 ## 0.10.0
 
 - Layer editor: change trigger and mappings from the UI.

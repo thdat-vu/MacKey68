@@ -110,6 +110,12 @@ final class AppModel: ObservableObject {
         if config.layersEnabled != false {
             config.layersEnabled = false
         }
+        if config.combos == nil {
+            config.combos = []
+        }
+        if config.combosEnabled != false {
+            config.combosEnabled = false
+        }
         Self.migrateDevices(&config, detected: detected)
 
         self.config = config
@@ -495,20 +501,91 @@ final class AppModel: ObservableObject {
         rebuildLayerEngine()
     }
 
+    var combos: [Combo] { config.combos ?? [] }
+    var combosEnabled: Bool { config.combosEnabled == true }
+
+    func setCombosEnabled(_ enabled: Bool) {
+        config.combosEnabled = enabled
+        persist()
+        rebuildLayerEngine()
+    }
+
+    @discardableResult
+    func addCombo() -> String {
+        var index = 1
+        let ids = Set(combos.map(\.id))
+        while ids.contains("combo-\(index)") { index += 1 }
+        let combo = Combo(id: "combo-\(index)",
+                          name: "Combo \(index)",
+                          modifiers: ["control", "option"],
+                          from: "H",
+                          to: "LeftArrow")
+        var list = combos
+        list.append(combo)
+        config.combos = list
+        persist()
+        rebuildLayerEngine()
+        return combo.id
+    }
+
+    func setComboEnabled(id: String, enabled: Bool) {
+        guard let index = config.combos?.firstIndex(where: { $0.id == id }) else { return }
+        config.combos?[index].enabled = enabled
+        persist()
+        rebuildLayerEngine()
+    }
+
+    func toggleComboModifier(id: String, modifier: String) {
+        guard let index = config.combos?.firstIndex(where: { $0.id == id }) else { return }
+        var modifiers = config.combos?[index].modifiers ?? []
+        let key = modifier.lowercased()
+        if let existing = modifiers.firstIndex(where: { $0.lowercased() == key }) {
+            modifiers.remove(at: existing)
+        } else {
+            modifiers.append(key)
+        }
+        config.combos?[index].modifiers = modifiers
+        persist()
+        rebuildLayerEngine()
+    }
+
+    func setComboFrom(id: String, from: String) {
+        guard let index = config.combos?.firstIndex(where: { $0.id == id }) else { return }
+        config.combos?[index].from = from
+        persist()
+        rebuildLayerEngine()
+    }
+
+    func setComboTo(id: String, to: String) {
+        guard let index = config.combos?.firstIndex(where: { $0.id == id }) else { return }
+        config.combos?[index].to = to
+        persist()
+        rebuildLayerEngine()
+    }
+
+    func deleteCombo(id: String) {
+        config.combos?.removeAll { $0.id == id }
+        persist()
+        rebuildLayerEngine()
+    }
+
     private var layerTriggerUsages: Set<UInt32> {
         Set(layers.filter(\.enabled).compactMap { KeyCodes.code(for: $0.trigger) })
     }
 
     private func rebuildLayerEngine() {
         guard ready else { return }
-        guard config.layersEnabled == true else {
+        guard config.layersEnabled == true || config.combosEnabled == true else {
             layerEngine.stop()
             layerStatus = .off
             return
         }
 
-        let rules = LayerRules.build(layers: layers.filter(\.enabled),
-                                     profile: activeProfile)
+        let rules = LayerRules.build(
+            layers: config.layersEnabled == true ? layers.filter(\.enabled) : [],
+            combos: config.combosEnabled == true ? combos.filter(\.enabled) : [],
+            profile: activeProfile
+        )
         if layerEngine.status == .off {
             layerStatus = layerEngine.start(rules: rules)
         } else {
@@ -749,7 +826,7 @@ final class AppModel: ObservableObject {
 
         do {
             var profileMappings = activeProfile.mappings
-            if layerStatus == .running {
+            if layersEnabled && layerStatus == .running {
                 // The event tap must see the raw trigger key (e.g. Caps), so
                 // pause its hidutil remap only while the tap is really active.
                 let triggers = layerTriggerUsages
