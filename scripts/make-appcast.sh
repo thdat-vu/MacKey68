@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build appcast.xml for Sparkle from the DMG and its EdDSA key.
 #   ./scripts/make-appcast.sh [dist/MacKey68-0.5.0.dmg]
-# Signing key: $SPARKLE_PRIVATE_KEY_FILE (default ~/.config/mackey/sparkle_private_key)
+# Signing key: $SPARKLE_PRIVATE_KEY_FILE (default ~/Library/Application Support/MacKey68/sparkle_private_key)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -9,7 +9,7 @@ APP="build/MacKey68.app"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")"
 BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Contents/Info.plist")"
 DMG="${1:-dist/MacKey68-$VERSION.dmg}"
-KEY="${SPARKLE_PRIVATE_KEY_FILE:-$HOME/.config/mackey/sparkle_private_key}"
+KEY="${SPARKLE_PRIVATE_KEY_FILE:-$HOME/Library/Application Support/MacKey68/sparkle_private_key}"
 SIGN_UPDATE=".build/artifacts/sparkle/Sparkle/bin/sign_update"
 
 [[ -f "$DMG" ]] || { echo "missing $DMG" >&2; exit 1; }

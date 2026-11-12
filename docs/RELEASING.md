@@ -53,12 +53,12 @@ xcrun notarytool store-credentials mackey68-notary \
 ## 3. Sparkle auto-update
 
 - Public key đã nằm trong `scripts/build-app.sh` (`SUPublicEDKey`).
-- Private key local: `~/.config/mackey/sparkle_private_key` (chmod 600). **Sao lưu offline**;
+- Private key local: `~/Library/Application Support/MacKey68/sparkle_private_key` (chmod 600). **Sao lưu offline**;
   mất key này thì không thể phát hành update cho các bản đã cài.
 - Đưa private key vào secret:
 
 ```bash
-base64 < ~/.config/mackey/sparkle_private_key | pbcopy
+base64 < "$HOME/Library/Application Support/MacKey68/sparkle_private_key" | pbcopy
 ```
 
 - Feed URL: `https://github.com/thdat-vu/MacKey68/releases/latest/download/appcast.xml`.
@@ -66,7 +66,7 @@ base64 < ~/.config/mackey/sparkle_private_key | pbcopy
 - Ký appcast thủ công:
 
 ```bash
-SPARKLE_PRIVATE_KEY_FILE=~/.config/mackey/sparkle_private_key \
+SPARKLE_PRIVATE_KEY_FILE="$HOME/Library/Application Support/MacKey68/sparkle_private_key" \
   ./scripts/make-appcast.sh dist/MacKey68-<version>.dmg
 ```
 
