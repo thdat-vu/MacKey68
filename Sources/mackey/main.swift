@@ -486,6 +486,35 @@ func runSelftest() -> Never {
           "garbage profile rejected")
     check(ProfileTransfer.withUniqueID(shared, existing: [shared]).id == "share-me-2",
           "id collision gets a suffix")
+
+    print("Window rules")
+    let windowRule = WindowRule(id: "r1", name: "LoL",
+                                bundlePrefix: "com.riotgames.",
+                                titleContains: "League of Legends",
+                                profileID: "league")
+    check(windowRule.matches(bundleID: "com.riotgames.LeagueClient",
+                             title: "League of Legends"), "bundle prefix + title match")
+    check(windowRule.matches(bundleID: "com.riotgames.LeagueClient",
+                             title: "league of legends — lobby"), "case-insensitive title")
+    check(!windowRule.matches(bundleID: "com.google.Chrome",
+                              title: "League of Legends"), "wrong bundle rejected")
+    check(!windowRule.matches(bundleID: "com.riotgames.LeagueClient",
+                              title: "Something else"), "wrong title rejected")
+    var disabled = windowRule
+    disabled.enabled = false
+    check(!disabled.matches(bundleID: "com.riotgames.LeagueClient",
+                            title: "League of Legends"), "disabled rule ignored")
+    let windowConfig = KeymapConfig(windowRules: [
+        WindowRule(id: "any", name: "Any", bundlePrefix: nil,
+                   titleContains: "Photoshop", profileID: "mac"),
+        windowRule,
+    ])
+    check(windowConfig.windowRule(bundleID: "com.riotgames.LeagueClient",
+                                  title: "League of Legends")?.id == "r1",
+          "rule lookup")
+    check(windowConfig.windowRule(bundleID: "com.adobe.Photoshop",
+                                  title: "Untitled — Photoshop")?.id == "any",
+          "any-app rule")
     let fallback = KeymapConfig(
         defaultProfileID: "second",
         profiles: [

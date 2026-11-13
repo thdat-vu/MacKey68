@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.0
+
+- Window-title profile rules: app bundle prefix + focused title → profile.
+- Rule editor with "Use current app" / "Use current title".
+- Rules win over profile autoFor; focused title is checked every 1.5 s.
+- Needs Accessibility permission; troubleshooting and config docs updated.
+
 ## 0.11.0
 
 - Combos: modifier + key → another key (e.g. ⌃⌥ + H → LeftArrow).

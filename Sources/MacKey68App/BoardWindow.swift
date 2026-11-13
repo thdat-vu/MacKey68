@@ -24,6 +24,10 @@ struct BoardWindow: View {
             LayersView()
                 .environmentObject(model)
         }
+        .sheet(isPresented: $model.isShowingRules) {
+            WindowRulesView()
+                .environmentObject(model)
+        }
         .sheet(isPresented: $model.isShowingLab) {
             KeyboardLabView(lab: lab) { usage in
                 let source = model.sourceUsage(forReportedUsage: usage)
@@ -126,6 +130,9 @@ struct BoardWindow: View {
 
             Button(model.t("Layer & combo (beta)…", "Layers & combos (beta)…")) {
                 model.isShowingLayers = true
+            }
+            Button(model.t("Window rules…", "Window rules…")) {
+                model.isShowingRules = true
             }
         } label: {
             Image(systemName: "ellipsis.circle")

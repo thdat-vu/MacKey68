@@ -61,6 +61,8 @@ final class AppModel: ObservableObject {
     @Published var isShowingLab = false
     /// Layers beta sheet.
     @Published var isShowingLayers = false
+    /// Window-title rules sheet.
+    @Published var isShowingRules = false
     /// Event-tap status for layers.
     @Published private(set) var layerStatus: LayerEngine.Status = .off
     /// Keys the user has pressed while testing the current layout.
@@ -82,6 +84,7 @@ final class AppModel: ObservableObject {
     private var workspaceObserver: NSObjectProtocol?
     private var watcher: DeviceWatcher?
     private var pendingDeviceSync: Task<Void, Never>?
+    private var windowRuleTimer: Timer?
     private let layerEngine = LayerEngine()
     private var ready = false
 
@@ -116,6 +119,9 @@ final class AppModel: ObservableObject {
         if config.combosEnabled != false {
             config.combosEnabled = false
         }
+        if config.windowRules == nil {
+            config.windowRules = []
+        }
         Self.migrateDevices(&config, detected: detected)
 
         self.config = config
@@ -143,6 +149,7 @@ final class AppModel: ObservableObject {
         noteForeign(NSWorkspace.shared.frontmostApplication)
         observeFrontmostApp()
         startWatchingDevices()
+        refreshWindowRuleTimer()
     }
 
     // MARK: - Device + layout
@@ -569,6 +576,75 @@ final class AppModel: ObservableObject {
         rebuildLayerEngine()
     }
 
+    // MARK: - Window rules
+
+    var windowRules: [WindowRule] { config.windowRules ?? [] }
+
+    @discardableResult
+    func addWindowRule(name: String,
+                       bundlePrefix: String?,
+                       titleContains: String,
+                       profileID: String) -> String {
+        var index = 1
+        let ids = Set(windowRules.map(\.id))
+        while ids.contains("rule-\(index)") { index += 1 }
+        let rule = WindowRule(id: "rule-\(index)",
+                              name: name.isEmpty ? "Window rule \(index)" : name,
+                              bundlePrefix: bundlePrefix?.trimmingCharacters(in: .whitespacesAndNewlines),
+                              titleContains: titleContains,
+                              profileID: profileID)
+        var list = windowRules
+        list.append(rule)
+        config.windowRules = list
+        persist()
+        refreshWindowRuleTimer()
+        return rule.id
+    }
+
+    func updateWindowRule(_ rule: WindowRule) {
+        guard let index = config.windowRules?.firstIndex(where: { $0.id == rule.id }) else { return }
+        config.windowRules?[index] = rule
+        persist()
+        refreshWindowRuleTimer()
+        syncProfile(with: NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
+                    title: WindowTitleReader.frontmost()?.title)
+    }
+
+    func setWindowRuleEnabled(id: String, enabled: Bool) {
+        guard let index = config.windowRules?.firstIndex(where: { $0.id == id }) else { return }
+        config.windowRules?[index].enabled = enabled
+        persist()
+        refreshWindowRuleTimer()
+    }
+
+    func deleteWindowRule(id: String) {
+        config.windowRules?.removeAll { $0.id == id }
+        persist()
+        refreshWindowRuleTimer()
+    }
+
+    var currentWindowTitle: String? {
+        WindowTitleReader.frontmost()?.title
+    }
+
+    func refreshWindowRuleTimer() {
+        windowRuleTimer?.invalidate()
+        windowRuleTimer = nil
+        guard !windowRules.isEmpty else { return }
+
+        let timer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, !self.windowRules.isEmpty,
+                      WindowTitleReader.isTrusted,
+                      let front = WindowTitleReader.frontmost() else { return }
+                self.syncProfile(with: front.bundleID, title: front.title)
+            }
+        }
+        timer.tolerance = 0.4
+        RunLoop.main.add(timer, forMode: .common)
+        windowRuleTimer = timer
+    }
+
     private var layerTriggerUsages: Set<UInt32> {
         Set(layers.filter(\.enabled).compactMap { KeyCodes.code(for: $0.trigger) })
     }
@@ -600,9 +676,12 @@ final class AppModel: ObservableObject {
         rebuildLayerEngine()
     }
 
-    /// Bundle id của app đang phía trước → đổi profile tương ứng.
-    func syncProfile(with bundleID: String?) {
-        let match = config.profile(matchingBundleID: bundleID)
+    /// Bundle id + focused window title → đổi profile tương ứng.
+    func syncProfile(with bundleID: String?, title: String? = nil) {
+        let ruleProfile = config.windowRule(bundleID: bundleID, title: title)
+            .flatMap { rule in config.allProfiles.first { $0.id == rule.profileID } }
+        let match = ruleProfile
+            ?? config.profile(matchingBundleID: bundleID)
             ?? config.fallbackProfile
         guard match.id != activeProfileID else { return }
         activeProfileID = match.id
@@ -645,7 +724,8 @@ final class AppModel: ObservableObject {
             Task { @MainActor in
                 guard let self else { return }
                 self.noteForeign(app)
-                self.syncProfile(with: app?.bundleIdentifier)
+                let title = app.flatMap { WindowTitleReader.title(for: $0) }
+                self.syncProfile(with: app?.bundleIdentifier, title: title)
             }
         }
     }

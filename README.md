@@ -95,6 +95,20 @@ managed, and the drawn board adapts to one of three layouts:
 Profiles carry their `autoFor` app rules, so a shared League profile keeps its automatic
 switching.
 
+## Window rules
+
+Switch profile by **app + focused window title**, not just bundle id. Useful for games
+launched through CrossOver/Wine or apps with several windows.
+
+- Menu bar → **Window rules…**, or `open "mackey68://rules"`.
+- **Add rule**: optional bundle-id prefix, a substring of the window title, and the
+  profile to activate. Buttons fill in the current app/title.
+- Example for League through CrossOver: bundle `com.codeweavers.CrossOver`, title
+  `League of Legends` → profile `League of Legends`.
+- Window rules win over profile `autoFor`. The app checks the focused title every 1.5 s
+  while rules exist.
+- Needs **Accessibility** permission to read window titles.
+
 ## Layers & combos (beta)
 
 Hold **Caps Lock** to turn `IJKL` into arrow keys, `U/O` into Home/End, `Y/N` into
@@ -226,7 +240,7 @@ rm -rf ~/Applications/MacKey68.app
 ./scripts/package-dmg.sh
 ```
 
-Creates `dist/MacKey68-0.11.0.dmg` with the app and an Applications shortcut to drag it
+Creates `dist/MacKey68-0.12.0.dmg` with the app and an Applications shortcut to drag it
 onto. The app registers itself as a login item on first launch, so users don't need
 Terminal.
 
@@ -243,9 +257,9 @@ To sign with Developer ID (paid Apple Developer account):
 ```bash
 MACKEY_SIGN_IDENTITY="Developer ID Application: Name (TEAMID)" ./scripts/package-dmg.sh
 # then notarize:
-xcrun notarytool submit dist/MacKey68-0.11.0.dmg \
+xcrun notarytool submit dist/MacKey68-0.12.0.dmg \
   --apple-id you@example.com --team-id TEAMID --password "$APP_PASSWORD" --wait
-xcrun stapler staple dist/MacKey68-0.11.0.dmg
+xcrun stapler staple dist/MacKey68-0.12.0.dmg
 ```
 
 The app icon is drawn in code; no source image is needed:
@@ -331,6 +345,8 @@ really sends.
 - `layers` / `layersEnabled` / `combos` / `combosEnabled`: event-tap features. Layers
   have a `trigger`, `enabled` and `mappings`; combos have `modifiers`, `from`, `to`.
   Both master switches default to off.
+- `windowRules`: app + window-title rules. Each has an optional `bundlePrefix`,
+  `titleContains`, `profileID` and `enabled`.
 - The older `mappings`-only format still loads and is upgraded to a `default` profile.
 - The app rewrites this config whenever you change a key, a layout or link an app;
   after editing by hand, reopen the app (or click **Reapply** in the menu).
@@ -543,6 +559,19 @@ bàn phím vẽ ra tự đổi theo một trong ba layout:
 Profile mang theo rule `autoFor`, nên profile League được chia sẻ vẫn tự chuyển khi mở
 game.
 
+## Window rules
+
+Đổi profile theo **app + tiêu đề cửa sổ đang focus**, không chỉ bundle id. Hữu ích cho
+game chạy qua CrossOver/Wine hoặc app có nhiều cửa sổ.
+
+- Menu bar → **Window rules…**, hoặc `open "mackey68://rules"`.
+- **Thêm rule**: tiền tố bundle id (tuỳ chọn), một phần tiêu đề cửa sổ, và profile cần
+  bật. Có nút lấy app/title hiện tại.
+- Ví dụ LoL qua CrossOver: bundle `com.codeweavers.CrossOver`, title
+  `League of Legends` → profile `League of Legends`.
+- Window rule thắng `autoFor` của profile. App kiểm tra title mỗi 1,5 giây khi có rule.
+- Cần quyền **Accessibility** để đọc tiêu đề cửa sổ.
+
 ## Layer & combo (beta)
 
 Giữ **Caps Lock** để biến `IJKL` thành mũi tên, `U/O` thành Home/End, `Y/N` thành
@@ -675,7 +704,7 @@ rm -rf ~/Applications/MacKey68.app
 ./scripts/package-dmg.sh
 ```
 
-Tạo `dist/MacKey68-0.11.0.dmg`: mở ra có app và lối tắt Applications để kéo vào. App tự
+Tạo `dist/MacKey68-0.12.0.dmg`: mở ra có app và lối tắt Applications để kéo vào. App tự
 đăng ký chạy khi đăng nhập ở lần mở đầu tiên, nên người dùng không cần Terminal.
 
 Về Gatekeeper, có ba mức:
@@ -691,9 +720,9 @@ Về Gatekeeper, có ba mức:
 ```bash
 MACKEY_SIGN_IDENTITY="Developer ID Application: Tên (TEAMID)" ./scripts/package-dmg.sh
 # sau đó notarize:
-xcrun notarytool submit dist/MacKey68-0.11.0.dmg \
+xcrun notarytool submit dist/MacKey68-0.12.0.dmg \
   --apple-id you@example.com --team-id TEAMID --password "$APP_PASSWORD" --wait
-xcrun stapler staple dist/MacKey68-0.11.0.dmg
+xcrun stapler staple dist/MacKey68-0.12.0.dmg
 ```
 
 Icon app được vẽ bằng code, không cần file ảnh nguồn:
@@ -777,6 +806,8 @@ Input Monitoring → bật cho Terminal). Đây là công cụ để dò xem `Fn
 - `layers` / `layersEnabled` / `combos` / `combosEnabled`: tính năng event tap. Layer có
   `trigger`, `enabled`, `mappings`; combo có `modifiers`, `from`, `to`. Cả hai công tắc
   tổng mặc định tắt.
+- `windowRules`: rule theo app + tiêu đề cửa sổ. Mỗi rule có `bundlePrefix` (tuỳ chọn),
+  `titleContains`, `profileID`, `enabled`.
 - Dạng cũ chỉ có `mappings` vẫn đọc được và được nâng thành một profile `default`.
 - App ghi config này mỗi khi bạn đổi phím, đổi layout hoặc gắn app, nên sửa tay xong chỉ
   cần mở lại app (hoặc bấm **Áp dụng lại** trên menu).

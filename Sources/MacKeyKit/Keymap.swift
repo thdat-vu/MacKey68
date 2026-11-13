@@ -93,6 +93,42 @@ public struct DeviceConfig: Codable, Equatable, Identifiable {
     }
 }
 
+/// Match the frontmost app and its focused window title to a profile.
+public struct WindowRule: Codable, Identifiable, Equatable {
+    public var id: String
+    public var name: String
+    /// Optional bundle-id prefix; nil/empty means any app.
+    public var bundlePrefix: String?
+    /// Case-insensitive substring of the focused window title.
+    public var titleContains: String
+    public var profileID: String
+    public var enabled: Bool
+
+    public init(id: String,
+                name: String,
+                bundlePrefix: String? = nil,
+                titleContains: String,
+                profileID: String,
+                enabled: Bool = true) {
+        self.id = id
+        self.name = name
+        self.bundlePrefix = bundlePrefix
+        self.titleContains = titleContains
+        self.profileID = profileID
+        self.enabled = enabled
+    }
+
+    public func matches(bundleID: String?, title: String?) -> Bool {
+        guard enabled else { return false }
+        if let prefix = bundlePrefix, !prefix.isEmpty {
+            guard let bundleID, bundleID.hasPrefix(prefix) else { return false }
+        }
+        let needle = titleContains.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !needle.isEmpty, let title else { return false }
+        return title.localizedCaseInsensitiveContains(needle)
+    }
+}
+
 /// A modifier + key shortcut handled by the event tap, e.g. Ctrl+Option+H.
 public struct Combo: Codable, Identifiable, Equatable {
     public var id: String
@@ -192,6 +228,8 @@ public struct KeymapConfig: Codable {
     public var combos: [Combo]?
     /// Master switch for combos.
     public var combosEnabled: Bool?
+    /// Rules matching app + focused window title.
+    public var windowRules: [WindowRule]?
     /// Dạng cũ (một bộ mapping duy nhất). Vẫn đọc được.
     public var mappings: [KeyMapping]?
     /// Nhiều bộ mapping, có thể gắn với app để tự chuyển.
@@ -206,6 +244,7 @@ public struct KeymapConfig: Codable {
                 layersEnabled: Bool? = nil,
                 combos: [Combo]? = nil,
                 combosEnabled: Bool? = nil,
+                windowRules: [WindowRule]? = nil,
                 mappings: [KeyMapping]? = nil,
                 profiles: [Profile]? = nil) {
         self.name = name
@@ -217,6 +256,7 @@ public struct KeymapConfig: Codable {
         self.layersEnabled = layersEnabled
         self.combos = combos
         self.combosEnabled = combosEnabled
+        self.windowRules = windowRules
         self.mappings = mappings
         self.profiles = profiles
     }
@@ -257,6 +297,10 @@ public struct KeymapConfig: Codable {
             return chosen
         }
         return allProfiles.first { $0.autoFor.isEmpty } ?? defaultProfile
+    }
+
+    public func windowRule(bundleID: String?, title: String?) -> WindowRule? {
+        windowRules?.first { $0.matches(bundleID: bundleID, title: title) }
     }
 
     public func profile(matchingBundleID bundleID: String?) -> Profile? {

@@ -11,7 +11,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let wantsLab = CommandLine.arguments.contains("--lab")
         let wantsLayers = CommandLine.arguments.contains("--layers")
         let wantsLayersOn = CommandLine.arguments.contains("--layers-on")
-        let showsBoard = wantsBoard || wantsLab || wantsLayers || wantsLayersOn || !launchedByAgent
+        let wantsRules = CommandLine.arguments.contains("--rules")
+        let showsBoard = wantsBoard || wantsLab || wantsLayers || wantsLayersOn || wantsRules || !launchedByAgent
 
         // Không có icon trên Dock khi chỉ chạy nền; khi mở cửa sổ thì thành app thường
         // để macOS cho phép đưa cửa sổ ra trước.
@@ -43,6 +44,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     AppModel.shared.isShowingLayers = true
                 }
             }
+            if wantsRules {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    AppModel.shared.isShowingRules = true
+                }
+            }
             // Lần hai sau khi app đã ổn định: macOS hay trì hoãn việc activate app mới.
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
                 BoardWindowController.shared.show(model: AppModel.shared)
@@ -71,6 +77,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if link.host?.lowercased() == "layers-off" {
             AppModel.shared.setLayersEnabled(false)
+            return
+        }
+
+        if link.host?.lowercased() == "rules" {
+            let model = AppModel.shared
+            BoardWindowController.shared.show(model: model)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                model.isShowingRules = true
+            }
             return
         }
 
@@ -194,6 +209,12 @@ struct MenuContent: View {
             BoardWindowController.shared.show(model: model)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 model.isShowingLab = true
+            }
+        }
+        Button(model.t("Window rules…", "Window rules…")) {
+            BoardWindowController.shared.show(model: model)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                model.isShowingRules = true
             }
         }
         Button(model.t("Layer & combo (beta)…", "Layers & combos (beta)…")) {
