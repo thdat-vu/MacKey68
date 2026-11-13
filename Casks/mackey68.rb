@@ -1,6 +1,6 @@
 cask "mackey68" do
-  version "0.12.0"
-  sha256 "12ebdc7103e72603f164db1ec723eb8e80b53dd317529a199b7da5f78e2eaaf5"
+  version "0.12.1"
+  sha256 "5c2472090dd7e0923e9b86b320e4bde5657119fd5594c9b0fcd6085a96cfa260"
 
   url "https://github.com/thdat-vu/MacKey68/releases/download/v#{version}/MacKey68-#{version}.dmg"
   name "MacKey68"

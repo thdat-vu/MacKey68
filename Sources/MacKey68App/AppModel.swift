@@ -627,6 +627,16 @@ final class AppModel: ObservableObject {
         WindowTitleReader.frontmost()?.title
     }
 
+    var lastForeignBundleID: String? { lastForeignApp?.id }
+
+    var lastForeignWindowTitle: String? {
+        guard let id = lastForeignApp?.id,
+              let app = NSWorkspace.shared.runningApplications.first(where: {
+                  $0.bundleIdentifier == id
+              }) else { return nil }
+        return WindowTitleReader.title(for: app)
+    }
+
     func refreshWindowRuleTimer() {
         windowRuleTimer?.invalidate()
         windowRuleTimer = nil
@@ -636,7 +646,12 @@ final class AppModel: ObservableObject {
             Task { @MainActor in
                 guard let self, !self.windowRules.isEmpty,
                       WindowTitleReader.isTrusted,
-                      let front = WindowTitleReader.frontmost() else { return }
+                      var front = WindowTitleReader.frontmost() else { return }
+                if front.bundleID == Bundle.main.bundleIdentifier {
+                    guard let last = self.lastForeignApp else { return }
+                    front.bundleID = last.id
+                    front.title = self.lastForeignWindowTitle
+                }
                 self.syncProfile(with: front.bundleID, title: front.title)
             }
         }
@@ -724,6 +739,8 @@ final class AppModel: ObservableObject {
             Task { @MainActor in
                 guard let self else { return }
                 self.noteForeign(app)
+                // Opening MacKey68 itself must not reset the game's profile.
+                guard app?.bundleIdentifier != Bundle.main.bundleIdentifier else { return }
                 let title = app.flatMap { WindowTitleReader.title(for: $0) }
                 self.syncProfile(with: app?.bundleIdentifier, title: title)
             }

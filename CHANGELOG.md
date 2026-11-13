@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.1
+
+- "Use current app/title" in the window-rule editor now uses the last non-MacKey68 app,
+  so it captures the game/browser, not MacKey68 itself.
+- Opening the MacKey68 window no longer resets the active profile.
+- Window-rule polling ignores MacKey68 in the foreground.
+
 ## 0.12.0
 
 - Window-title profile rules: app bundle prefix + focused title → profile.

@@ -201,7 +201,11 @@ struct WindowRuleEditorView: View {
                         .font(.caption).foregroundStyle(.secondary)
                     Spacer()
                     Button(model.t("Dùng app hiện tại", "Use current app")) {
-                        bundlePrefix = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? ""
+                        if let id = model.lastForeignBundleID {
+                            bundlePrefix = id
+                        } else {
+                            bundlePrefix = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? ""
+                        }
                     }
                     .controlSize(.small)
                 }
@@ -219,7 +223,11 @@ struct WindowRuleEditorView: View {
                         if !WindowTitleReader.isTrusted {
                             WindowTitleReader.requestAccess()
                         }
-                        titleContains = WindowTitleReader.frontmost()?.title ?? titleContains
+                        if let title = model.lastForeignWindowTitle {
+                            titleContains = title
+                        } else if let title = WindowTitleReader.frontmost()?.title {
+                            titleContains = title
+                        }
                     }
                     .controlSize(.small)
                 }
